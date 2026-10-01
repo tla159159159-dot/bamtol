@@ -16,18 +16,19 @@ return out;
 function ttsUrl(t,v){ return '/api/tts?v='+encodeURIComponent(v)+'&r='+gRate().toFixed(2)+'&t='+encodeURIComponent(t); }
 // 조각별로 이어서 재생. 실패하면 로봇 음성 대신 안내만.
 async function googleSpeak(text,btn,key,voiceOverride){
-var parts=splitTts(text), v=voiceOverride||gVoice();
-if(!parts.length) return;
-if(!voiceOverride) bgmAuto();
+var v=voiceOverride||gVoice(), urls=splitTts(text).map(function(p){ return ttsUrl(p,v); });
+if(!urls.length) return;
+if(!voiceOverride){ bgmAuto(); if(window.meGreet) urls=meGreet(urls); } // 회원이면 엄마·아빠 인사말을 앞뒤에
 var i=0; var a=new Audio(); curAudio=a; curBtn=btn;
 if(btn.textContent!==undefined) btn.textContent='⏳ 음성 만드는 중…';
-var fail=function(){ if(curAudio!==a) return; curAudio=null; browserSpeak('',btn); };
+var next=function(){ if(curAudio!==a) return; i++; if(i<urls.length) play(); else { curAudio=null; resetBtn(); curBtn=null; } };
+var fail=function(){ if(curAudio!==a) return; if(/\/api\/me/.test(urls[i])) return next(); curAudio=null; browserSpeak('',btn); }; // 인사말이 안 나오면 건너뜀
 var play=function(){
-a.src=ttsUrl(parts[i],v);
-if(parts[i+1]) fetch(ttsUrl(parts[i+1],v)).catch(function(){});
+a.src=urls[i];
+if(urls[i+1]) fetch(urls[i+1]).catch(function(){});
 a.play().then(function(){ if(curAudio===a && btn.textContent!==undefined) btn.textContent='⏸ 멈추기'; }).catch(fail);
 };
-a.onended=function(){ if(curAudio!==a) return; i++; if(i<parts.length) play(); else { curAudio=null; resetBtn(); curBtn=null; } };
+a.onended=next;
 a.onerror=fail;
 play();
 }
@@ -136,3 +137,5 @@ var rs=document.getElementById('rateSel'); if(rs) rs.addEventListener('change',f
 syncBgmUi(); syncVoiceUi();
 try{ refreshVoiceState(); }catch(e){}
 })();
+// 회원 기능(카카오 로그인·인사말 녹음)
+(function(){ var s=document.createElement('script'); s.src='/member.js'; document.body.appendChild(s); })();
