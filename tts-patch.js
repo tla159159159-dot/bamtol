@@ -114,20 +114,25 @@ document.querySelectorAll('[data-bgmsel]').forEach(function(s){ s.value=bgmTrack
 function bgmSelHtml(){
 return '<select data-bgmsel class="bgmsel" aria-label="배경음 고르기" onchange="pickBgm(this.value)">'+BGM_TRACKS.map(function(t){ return '<option value="'+t[0]+'">'+t[1]+'</option>'; }).join('')+'</select>';
 }
+// 목소리 바꾸기 버튼: 읽어주기 바로 아래에 현재 목소리를 보여주고 누르면 설정창
+function voiceName(){ var v=gVoice(); for(var k=0;k<VOICES.length;k++) if(VOICES[k].id===v) return VOICES[k].g+' · '+VOICES[k].t; return '여성 · 따뜻·나긋'; }
+function syncVoiceUi(){ document.querySelectorAll('[data-voicebtn]').forEach(function(b){ b.textContent=voiceName()+'  ▸ 바꾸기'; }); }
+function selectVoice(id){ try{ localStorage.setItem('bamtol_voice',id); }catch(e){} renderVoiceList(); syncVoiceUi(); toast('이 목소리로 정했어요 🎙'); }
+function voiceRowHtml(){ return '<div class="voicerow"><span>🎙 읽어주는 목소리</span><button type="button" class="thm vbtn" data-voicebtn onclick="openSettings()"></button></div>'; }
 (function(){
 var st=document.createElement('style');
-st.textContent='.keytoggle{display:none!important}.bgmsel{padding:7px 10px;border-radius:10px;border:1.5px solid var(--line-strong,#483C7C);background:var(--sunk,#241D45);color:var(--ink,#F8F5FF);font:inherit;font-size:13px;max-width:100%}.voicerow{flex-wrap:wrap;gap:8px}';
+st.textContent='.vbtn{border-color:var(--brand,#AE94FF)!important;color:var(--brand,#AE94FF)!important;font-weight:700}#ftModal .keyrow{display:none!important}.keytoggle{display:none!important}.bgmsel{padding:7px 10px;border-radius:10px;border:1.5px solid var(--line-strong,#483C7C);background:var(--sunk,#241D45);color:var(--ink,#F8F5FF);font:inherit;font-size:13px;max-width:100%}.voicerow{flex-wrap:wrap;gap:8px}';
 document.head.appendChild(st);
 var hb=document.getElementById('bgmBtn');
-if(hb){ hb.setAttribute('data-bgmbtn',''); hb.insertAdjacentHTML('afterend',bgmSelHtml()); }
+if(hb){ hb.setAttribute('data-bgmbtn',''); hb.insertAdjacentHTML('afterend',bgmSelHtml()); var hr=hb.closest('.voicerow'); if(hr) hr.insertAdjacentHTML('beforebegin',voiceRowHtml()); }
 var kr=document.querySelector('#ftModal .keyrow');
-if(kr) kr.insertAdjacentHTML('beforebegin','<div class="voicerow"><span>🎵 잠자리 배경음</span><button type="button" class="thm" data-bgmbtn onclick="toggleBgm()">🎵 배경음 켜기</button>'+bgmSelHtml()+'</div>');
+if(kr) kr.insertAdjacentHTML('beforebegin',voiceRowHtml()+'<div class="voicerow"><span>🎵 잠자리 배경음</span><button type="button" class="thm" data-bgmbtn onclick="toggleBgm()">🎵 배경음 켜기</button>'+bgmSelHtml()+'</div>');
 // 설정창: 키 입력칸 없애고, 속도는 바꾸면 바로 저장
 var key=document.getElementById('gttsKey');
 if(key){ var row=key.closest('.keyinput'); if(row){ var lab=row.previousElementSibling; if(lab&&lab.classList.contains('setlabel')) lab.style.display='none'; row.style.display='none'; } }
 document.querySelectorAll('#setModal .setbtns button').forEach(function(b){ if(/키/.test(b.textContent)) b.style.display='none'; });
 var desc=document.querySelector('#setModal .setdesc'); if(desc) desc.innerHTML='맞춤동화·전래동화 모두 <b>사람 같은 자연 음성</b>으로 읽어줘요. 마음에 드는 목소리와 속도를 골라보세요.';
 var rs=document.getElementById('rateSel'); if(rs) rs.addEventListener('change',function(){ try{ localStorage.setItem('bamtol_rate',rs.value); }catch(e){} });
-syncBgmUi();
+syncBgmUi(); syncVoiceUi();
 try{ refreshVoiceState(); }catch(e){}
 })();
