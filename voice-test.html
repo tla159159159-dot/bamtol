@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>밤톨 목소리 고르기</title>
+<style>
+body{margin:0;background:#181328;color:#F8F5FF;font-family:system-ui,sans-serif;padding:24px 16px}
+.w{max-width:640px;margin:0 auto}h1{font-size:22px;margin:0 0 6px}p{color:#DAD3F2;font-size:14px;line-height:1.6}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+button{background:#241D45;color:#F8F5FF;border:1px solid #483C7C;border-radius:12px;padding:12px 14px;font-size:15px;cursor:pointer}
+button.on{background:#AE94FF;color:#140E2C;border-color:#AE94FF}
+h2{font-size:15px;color:#ABA2CE;margin:22px 0 4px}#now{color:#FFC862;min-height:20px;font-size:14px}
+</style></head><body><div class="w">
+<h1>🌙 밤톨 목소리 고르기</h1>
+<p>버튼을 누르면 같은 동화 문장을 각 목소리로 읽어줘요. 마음에 드는 목소리 이름과 속도를 알려주세요.</p>
+<h2>읽는 속도</h2><div class="row" id="rates"></div>
+<h2>여성 목소리</h2><div class="row" id="f"></div>
+<h2>남성 목소리</h2><div class="row" id="m"></div>
+<div id="now"></div>
+</div>
+<script>
+var TEXT='옛날 옛날, 깊은 숲속 작은 오두막에 아기 토끼 한 마리가 살았어요. 달님이 창문을 톡톡 두드리면, 토끼는 포근한 이불을 덮고 스르르 잠이 들었답니다.';
+var F=['Aoede','Leda','Kore','Sulafat','Achernar','Vindemiatrix','Despina','Callirrhoe'], M=['Charon','Achird','Algieba','Schedar'];
+var rate='0.90', audio=new Audio();
+function btn(parent,label,on,fn){var b=document.createElement('button');b.textContent=label;if(on)b.className='on';b.onclick=function(){fn(b)};parent.appendChild(b);return b;}
+['0.80','0.90','1.00'].forEach(function(r){btn(document.getElementById('rates'),'×'+r,r===rate,function(b){rate=r;[].forEach.call(document.querySelectorAll('#rates button'),function(x){x.className='';});b.className='on';});});
+function play(name){
+  document.getElementById('now').textContent='▶ '+name+' · 속도 ×'+rate+' 재생 중…';
+  audio.src='/api/tts?v=ko-KR-Chirp3-HD-'+name+'&r='+rate+'&t='+encodeURIComponent(TEXT);
+  audio.play().catch(function(){document.getElementById('now').textContent='재생 실패 — 다시 눌러주세요';});
+}
+F.forEach(function(n){btn(document.getElementById('f'),n,false,function(){play(n)});});
+M.forEach(function(n){btn(document.getElementById('m'),n,false,function(){play(n)});});
+</script></body></html>
