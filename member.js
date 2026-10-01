@@ -1,0 +1,113 @@
+// 밤톨 회원 기능: 카카오 로그인, 아이 정보 저장, 엄마·아빠 인사말 녹음 (서버: /api/me)
+var ME={login:false};
+var KAKAO_SVG='<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="#191919" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7l-1 3.6c-.1.3.3.6.6.4l4.2-2.8c.5.1 1 .1 1.5.1 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>';
+var SLOT_INFO={hello:['시작 인사','예) "지우야, 오늘도 엄마가 동화 들려줄게"'],bye:['끝 인사','예) "잘 자, 사랑해. 좋은 꿈 꿔"']};
+
+function kakaoLogin(){ location.href='/api/me?login'; }
+async function meLoad(){
+try{ ME=await (await fetch('/api/me',{cache:'no-store'})).json(); }catch(e){ ME={login:false}; }
+renderMe();
+if(!ME.login) return;
+if(ME.kid){ try{ localStorage.setItem('bamtol_kid',JSON.stringify(ME.kid)); }catch(e){} try{ applyKid(ME.kid); }catch(e){} }
+else { try{ var k=JSON.parse(localStorage.getItem('bamtol_kid')||'null'); if(k&&k.name) meSave({kid:k}); }catch(e){} } // 로그인 전에 등록한 아이 정보 옮기기
+}
+async function meSave(body){
+var r=await fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+if(!r.ok) throw new Error(r.status);
+var j=await r.json(); ME.kid=j.kid; ME.rec=j.rec; renderMe(); return j;
+}
+function renderMe(){
+var box=document.getElementById('meBox');
+if(!box){ var nr=document.querySelector('.nav-right'); if(!nr) return; nr.insertAdjacentHTML('afterbegin','<span id="meBox"></span>'); box=document.getElementById('meBox'); }
+box.innerHTML='';
+var b=document.createElement('button'); b.type='button';
+if(ME.login){ b.className='mebtn'; b.textContent='🌙 '+(ME.nick||'회원')+'님'; b.onclick=openMe; }
+else { b.className='kakaobtn'; b.innerHTML=KAKAO_SVG+'<span><span class="kl">카카오 </span>로그인</span>'; b.onclick=kakaoLogin; }
+box.appendChild(b);
+var m=document.getElementById('meModal'); if(m&&!m.hidden) fillMe();
+document.querySelectorAll('[data-greetbtn]').forEach(function(g){ var n=ME.rec?Object.keys(ME.rec).length:0; g.textContent=n?'녹음됨 '+n+'/2  ▸ 바꾸기':'녹음하기'; });
+}
+// 동화 재생 목록 앞뒤에 인사말 끼우기 (tts-patch.js 의 googleSpeak 가 부름)
+function meGreet(urls){
+if(!ME.login||!ME.rec) return urls;
+var o=urls.slice();
+if(ME.rec.hello) o.unshift('/api/me?rec=hello&v='+ME.rec.hello);
+if(ME.rec.bye) o.push('/api/me?rec=bye&v='+ME.rec.bye);
+return o;
+}
+function openMe(){
+if(!ME.login){ toast('카카오로 로그인하면 내 목소리 인사말을 저장할 수 있어요'); setTimeout(kakaoLogin,900); return; }
+var m=document.getElementById('meModal');
+if(!m){
+document.body.insertAdjacentHTML('beforeend','<div class="modal setmodal" id="meModal" hidden role="dialog" aria-modal="true" aria-label="내 밤톨" onclick="if(event.target===this)closeMe()"><div class="setpanel">'
++'<h3 id="meTitle"></h3><p class="setdesc">아이 정보와 인사말은 카카오 계정에 저장돼서 휴대폰을 바꿔도 그대로예요.</p>'
++'<label class="setlabel">우리 아이</label><div class="mekid"><span id="meKid"></span><button type="button" class="btn btn-ghost" onclick="closeMe();openReg()">수정</button></div>'
++'<label class="setlabel">👩 엄마·아빠 목소리 인사말</label><p class="setdesc" style="margin-top:2px">동화 시작과 끝에 내 목소리가 나와요. 각 20초까지.</p>'
++'<div id="meRecs"></div>'
++'<div class="setbtns"><button type="button" class="btn btn-ghost" onclick="location.href=\'/api/me?logout\'">로그아웃</button><button type="button" class="btn btn-brand" onclick="closeMe()">닫기</button></div>'
++'</div></div>');
+m=document.getElementById('meModal');
+}
+fillMe(); m.hidden=false;
+}
+function closeMe(){ if(recState) recState.mr.stop(); var m=document.getElementById('meModal'); if(m) m.hidden=true; }
+function fillMe(){
+document.getElementById('meTitle').textContent='🌙 '+(ME.nick||'회원')+'님의 밤톨';
+var k=ME.kid; document.getElementById('meKid').textContent=k?(k.name+' · '+k.age+' · '+k.time):'아직 등록 전이에요';
+var box=document.getElementById('meRecs'); box.innerHTML='';
+['hello','bye'].forEach(function(s){
+var has=ME.rec&&ME.rec[s];
+var row=document.createElement('div'); row.className='recrow';
+row.innerHTML='<div class="rectxt"><b>'+SLOT_INFO[s][0]+(has?' ✅':'')+'</b><small>'+SLOT_INFO[s][1]+'</small></div>'
++'<div class="recbtns"><button type="button" class="btn btn-brand" data-act="rec">● 녹음</button>'
++(has?'<button type="button" class="btn btn-ghost" data-act="play">▶ 듣기</button><button type="button" class="btn btn-ghost" data-act="del">삭제</button>':'')
++'<label class="btn btn-ghost recfile">📁 파일<input type="file" accept="audio/*" hidden></label></div>';
+row.querySelector('[data-act=rec]').onclick=function(){ recToggle(s,this); };
+var pb=row.querySelector('[data-act=play]'); if(pb) pb.onclick=function(){ new Audio('/api/me?rec='+s+'&v='+ME.rec[s]).play().catch(function(){ toast('재생하지 못했어요'); }); };
+var db=row.querySelector('[data-act=del]'); if(db) db.onclick=function(){ recDel(s); };
+row.querySelector('input[type=file]').onchange=function(){ if(this.files[0]) recSave(s,this.files[0]); this.value=''; };
+box.appendChild(row);
+});
+}
+var recState=null;
+async function recToggle(slot,btn){
+if(recState){ recState.mr.stop(); return; }
+if(!window.MediaRecorder||!navigator.mediaDevices){ toast('이 브라우저는 녹음이 안 돼요. 📁 파일로 올려주세요'); return; }
+var stream; try{ stream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ toast('마이크 사용을 허용해 주세요'); return; }
+var mr; try{ mr=new MediaRecorder(stream,{audioBitsPerSecond:48000}); }catch(e){ mr=new MediaRecorder(stream); }
+var chunks=[];
+mr.ondataavailable=function(e){ if(e.data.size) chunks.push(e.data); };
+mr.onstop=function(){ stream.getTracks().forEach(function(t){ t.stop(); }); clearTimeout(recState.timer); recState=null; btn.textContent='● 녹음'; recSave(slot,new Blob(chunks,{type:(mr.mimeType||'audio/webm').split(';')[0]})); };
+mr.start(); recState={mr:mr,timer:setTimeout(function(){ mr.stop(); },20000)};
+btn.textContent='■ 멈추기 (최대 20초)';
+}
+function recSave(slot,blob){
+if(!/^audio\//.test(blob.type)){ toast('음성 파일만 올릴 수 있어요'); return; }
+if(blob.size>600000){ toast('파일이 너무 커요. 20초 이내로 녹음해 주세요'); return; }
+if(blob.size<2000){ toast('녹음이 너무 짧아요. 다시 해주세요'); return; }
+var fr=new FileReader();
+fr.onload=function(){ meSave({rec:slot,type:blob.type,data:String(fr.result).split(',')[1]}).then(function(){ toast('인사말을 저장했어요 💛'); }).catch(function(){ toast('저장하지 못했어요. 잠시 후 다시 해주세요'); }); };
+fr.readAsDataURL(blob);
+}
+async function recDel(slot){
+var r=await fetch('/api/me?rec='+slot,{method:'DELETE'}); if(!r.ok){ toast('삭제하지 못했어요'); return; }
+ME.rec=(await r.json()).rec; renderMe(); toast('삭제했어요');
+}
+(function(){
+var st=document.createElement('style');
+st.textContent='.kakaobtn{display:inline-flex;align-items:center;gap:6px;background:#FEE500;color:#191919;border:0;border-radius:12px;padding:9px 14px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap}'
++'.mebtn{background:transparent;color:var(--ink,#F8F5FF);border:1.5px solid var(--line-strong,#483C7C);border-radius:12px;padding:8px 12px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}'
++'.nav-right{display:flex;align-items:center;gap:8px}#meBox{display:inline-flex}'
++'.mekid{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1.5px solid var(--line-strong,#483C7C);border-radius:12px;background:var(--sunk,#241D45)}.mekid .btn{padding:7px 12px;font-size:13px}'
++'.recrow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;margin-top:8px;border:1.5px solid var(--line-strong,#483C7C);border-radius:12px;background:var(--sunk,#241D45)}'
++'.rectxt{display:flex;flex-direction:column;gap:2px;min-width:0}.rectxt small{color:var(--ink-faint,#ABA2CE);font-size:12px}.recbtns{display:flex;flex-wrap:wrap;gap:6px}.recbtns .btn{padding:7px 11px;font-size:13px}.recfile{cursor:pointer}'
++'@media (max-width:560px){.kakaobtn .kl{display:none}.kakaobtn{padding:9px 10px}.nav-right .btn{padding-left:12px;padding-right:12px}}';
+document.head.appendChild(st);
+// 목소리 고르기 줄 아래에 인사말 녹음 줄 추가
+document.querySelectorAll('[data-voicebtn]').forEach(function(v){ var row=v.closest('.voicerow'); if(row) row.insertAdjacentHTML('afterend','<div class="voicerow"><span>👩 엄마·아빠 목소리 인사말</span><button type="button" class="thm vbtn" data-greetbtn onclick="openMe()">녹음하기</button></div>'); });
+// 아이 등록하면 로그인 상태일 때 서버에도 저장
+if(typeof submitReg==='function'){ var _sr=submitReg; submitReg=function(){ _sr(); if(ME.login){ try{ var k=JSON.parse(localStorage.getItem('bamtol_kid')||'null'); if(k) meSave({kid:k}).catch(function(){}); }catch(e){} } }; }
+var p=new URLSearchParams(location.search).get('login');
+if(p){ history.replaceState(null,'',location.pathname+location.hash); setTimeout(function(){ toast(p==='ok'?'카카오 로그인 완료! 🌙':'로그인하지 못했어요. 다시 시도해 주세요'); },600); }
+renderMe(); meLoad();
+})();
