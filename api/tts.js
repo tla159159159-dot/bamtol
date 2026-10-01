@@ -2,7 +2,8 @@
 // 무료만 사용: 이번 달 사용 글자 수를 Upstash 카운터로 세서 LIMIT 넘으면 구글 호출 안 함(→ 화면은 기본 음성으로 전환).
 // 카운터 설정이 없으면 아예 구글을 안 부름 = 과금 0원 보장.
 // 같은 문장+음성+속도는 Vercel CDN에 1년 캐시 → 다시 들을 땐 구글 호출·카운트 없음.
-const VOICES = ['ko-KR-Chirp3-HD-Leda', 'ko-KR-Chirp3-HD-Aoede'];
+const VOICES = 'Achernar Aoede Autonoe Callirrhoe Despina Erinome Gacrux Kore Laomedeia Leda Pulcherrima Sulafat Vindemiatrix Zephyr Achird Algenib Algieba Alnilam Charon Enceladus Fenrir Iapetus Orus Puck Rasalgethi Sadachbia Sadaltager Schedar Umbriel Zubenelgenubi'.split(' ').map(n => 'ko-KR-Chirp3-HD-' + n);
+const DEFAULT_VOICE = 'ko-KR-Chirp3-HD-Leda';
 const HOSTS = ['bamtol.co.kr', 'www.bamtol.co.kr', 'bamtol.vercel.app'];
 const MAX = 500;
 const LIMIT = 900000; // Chirp3-HD 월 무료 100만 자 중 10% 여유
@@ -28,7 +29,7 @@ async function reserve(n) {
 module.exports = async (req, res) => {
   const q = req.query || {};
   const t = String(q.t || '').trim();
-  const v = VOICES.includes(q.v) ? q.v : VOICES[0];
+  const v = VOICES.includes(q.v) ? q.v : DEFAULT_VOICE;
   const r = Math.min(1.2, Math.max(0.6, Number(q.r) || 0.85));
   let host = '';
   try { host = new URL(req.headers.referer || '').hostname; } catch (e) {}
