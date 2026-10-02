@@ -46,6 +46,7 @@ document.body.insertAdjacentHTML('beforeend','<div class="modal setmodal" id="me
 +'<label class="setlabel">👩 엄마·아빠 목소리 인사말</label><p class="setdesc" style="margin-top:2px">동화 시작과 끝에 내 목소리가 나와요. 각 20초까지.</p>'
 +'<div id="meRecs"></div>'
 +'<div class="setbtns"><button type="button" class="btn btn-ghost" onclick="location.href=\'/api/me?logout\'">로그아웃</button><button type="button" class="btn btn-brand" onclick="closeMe()">닫기</button></div>'
++'<p style="text-align:center;margin:14px 0 0"><button type="button" id="meQuit" onclick="meQuit(this)" style="background:none;border:0;color:var(--ink-faint,#ABA2CE);font:inherit;font-size:12.5px;text-decoration:underline;cursor:pointer">회원 탈퇴</button></p>'
 +'</div></div>');
 m=document.getElementById('meModal');
 }
@@ -117,6 +118,15 @@ function trimNames(body){
 if(typeof STORIES!=='undefined') Object.keys(STORIES).forEach(function(k){ STORIES[k].body=trimNames(STORIES[k].body); });
 if(typeof makeStory==='function'){ var _mk=makeStory; makeStory=function(){ _mk(); fixNames(); }; makeStory(); }
 if(typeof packEpisode==='function'){ var _pe=packEpisode; packEpisode=function(i){ _pe(i); fixNames(); }; }
+// 회원 탈퇴: 한 번 누르면 확인 문구, 한 번 더 누르면 아이 정보·녹음·카톡 받기 모두 삭제
+function meQuit(b){
+if(!b.dataset.ok){ b.dataset.ok='1'; b.textContent='정말 탈퇴할까요? 아이 정보·인사말 녹음이 모두 지워져요. 한 번 더 누르면 탈퇴돼요'; b.style.color='#ff8a8a'; return; }
+b.disabled=true; b.textContent='탈퇴하는 중…';
+fetch('/api/me?all',{method:'DELETE'}).then(function(r){ if(!r.ok) throw 0;
+try{ localStorage.removeItem('bamtol_kid'); }catch(e){}
+toast('탈퇴가 완료됐어요. 그동안 고마웠어요 🌙'); setTimeout(function(){ location.href='/'; },1500);
+}).catch(function(){ b.disabled=false; b.textContent='회원 탈퇴'; delete b.dataset.ok; toast('탈퇴하지 못했어요. 잠시 후 다시 해주세요'); });
+}
 var recState=null;
 async function recToggle(slot,btn){
 if(recState){ recState.mr.stop(); return; }
