@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>밤톨 운영 현황</title>
+<!-- 관리자 전용 현황판: 데이터는 /api/me?stats (관리자 카카오 계정으로 로그인해야 보임) -->
+<style>
+body{margin:0;background:#181328;color:#F2EEFF;font:15px/1.6 -apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+.w{max-width:860px;margin:0 auto;padding:22px 16px 50px}
+h1{font-size:22px;margin:0 0 4px}.sub{color:#ABA2CE;font-size:13px;margin:0 0 18px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.t{background:#221A40;border:1px solid #3A2F6B;border-radius:14px;padding:14px}
+.t b{display:block;font-size:26px;color:#FFD678}.t span{color:#ABA2CE;font-size:13px}
+h2{font-size:16px;margin:26px 0 10px}
+.bar{display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0}
+.bar i{display:block;height:14px;background:#AE94FF;border-radius:4px;min-width:2px}
+.bar em{font-style:normal;color:#ABA2CE;width:78px;flex:none}
+table{width:100%;border-collapse:collapse;font-size:14px}td{padding:7px 8px;border-bottom:1px solid #2E2552}td:last-child{text-align:right;color:#FFD678}
+.msg{background:#221A40;border-radius:14px;padding:18px;text-align:center}
+a{color:#C9B8FF}
+</style>
+</head>
+<body><div class="w">
+<h1>🌙 밤톨 운영 현황</h1><p class="sub" id="sub">불러오는 중…</p>
+<div id="out"></div>
+</div>
+<script>
+var esc=function(s){ return String(s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+fetch('/api/me?stats',{cache:'no-store'}).then(function(r){ return r.status===401?{need:1}:r.json(); }).then(function(d){
+  var out=document.getElementById('out'), sub=document.getElementById('sub');
+  if(d.need){ sub.textContent=''; out.innerHTML='<div class="msg">관리자 카카오 계정으로 로그인해 주세요.<br><a href="/api/me?login">카카오 로그인 →</a></div>'; return; }
+  if(!('members' in d)){ sub.textContent=''; out.innerHTML='<div class="msg">관리자만 볼 수 있어요.</div>'; return; }
+  sub.textContent=new Date().toLocaleString('ko-KR')+' 기준';
+  var tile=function(n,l){ return '<div class="t"><b>'+n+'</b><span>'+l+'</span></div>'; };
+  var max=Math.max.apply(null,d.joins.map(function(x){ return x[1]; }).concat([1]));
+  var tmax=Math.max.apply(null,d.top.map(function(x){ return x[1]; }).concat([1]));
+  out.innerHTML='<div class="tiles">'+tile(d.members,'가입 회원')+tile(d.kids,'아이 등록')+tile(d.dl,'매일 밤 카톡 받기')+tile(d.recs,'인사말 녹음')+tile(d.favs,'찜한 동화(합계)')+tile(d.totalViews,'동화 조회수')+'</div>'
+   +'<h2>📈 날짜별 가입</h2>'+(d.joins.length?d.joins.map(function(x){ return '<div class="bar"><em>'+x[0].slice(5)+'</em><i style="width:'+Math.round(x[1]/max*70)+'%"></i>'+x[1]+'</div>'; }).join(''):'<p class="sub">아직 기록이 없어요 (오늘부터 집계)</p>')
+   +'<h2>📚 많이 읽힌 동화</h2>'+(d.top.length?'<table>'+d.top.map(function(x,i){ var k=x[0].split('|'); return '<tr><td>'+(i+1)+'. '+esc(k[0])+' <span style="color:#ABA2CE;font-size:12px">'+esc(k[1])+'</span></td><td>'+x[1]+'회</td></tr>'; }).join('')+'</table>':'<p class="sub">아직 기록이 없어요 (오늘부터 집계)</p>');
+}).catch(function(){ document.getElementById('sub').textContent='불러오지 못했어요. 새로고침해 주세요.'; });
+</script>
+</body>
+</html>
