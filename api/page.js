@@ -113,9 +113,30 @@ function feed(kind, all) {
     '</channel></rss>\n';
 }
 
+// 메인 화면 안에 박혀 있던 그림(1.2MB)을 따로 내려줌 → 첫 화면이 가벼워짐 (middleware.js 가 주소를 바꿔 끼움)
+const imgId = b => b.length + '-' + b.slice(200, 216).replace(/\+/g, '-').replace(/\//g, '_');
+let IMGS = null;
+async function img(host, id) {
+  if (!IMGS) {
+    const t = await (await fetch('https://' + host + '/index.html')).text();
+    IMGS = {};
+    for (const m of t.matchAll(/data:(image\/[a-z+]+);base64,([A-Za-z0-9+/=]+)/g)) IMGS[imgId(m[2])] = [m[1], m[2]];
+  }
+  return IMGS[id];
+}
+
 module.exports = async (req, res) => {
   const q = req.query || {};
   const s = String(q.s || '').normalize('NFC');
+  if (q.img) {
+    try {
+      const x = await img(req.headers.host || 'bamtol.co.kr', String(q.img));
+      if (!x) return res.status(404).end();
+      res.setHeader('Content-Type', x[0]);
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); // 그림이 바뀌면 주소(id)도 바뀜
+      return res.status(200).send(Buffer.from(x[1], 'base64'));
+    } catch (e) { return res.status(500).end(); }
+  }
   if (q.feed) {
     try {
       const x = feed(q.feed, await lib(req.headers.host || 'bamtol.co.kr'));
