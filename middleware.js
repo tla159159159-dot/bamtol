@@ -12,6 +12,9 @@ const HEAD_ADD =
   '<meta name="twitter:image" content="' + OG + '">' +
   '<link rel="icon" type="image/png" sizes="48x48" href="/api/img?i=icon">' +
   '<link rel="apple-touch-icon" href="/api/img?i=apple">\n';
+const HUB_LINKS = '<nav aria-label="동화 모음" style="margin-top:18px;font-size:13.5px;line-height:2">📚 동화 모음 · ' +
+  [['잠자리동화', '잠자리 동화'], ['전래동화', '전래동화'], ['세계명작동화', '세계명작동화'], ['이솝우화', '이솝우화'], ['짧은동화', '짧은 동화'], ['긴동화', '긴 동화']]
+    .map(([s, n]) => '<a href="/' + s + '/" style="margin-right:12px">' + n + '</a>').join('') + '</nav>';
 const meta = (h, attr, val) => h.replace(new RegExp('(<meta ' + attr + ' content=")[^"]*'), (_, a) => a + val);
 
 function seo(h) {
@@ -24,7 +27,8 @@ function seo(h) {
   h = meta(h, 'name="twitter:title"', TITLE);
   h = meta(h, 'name="twitter:description"', DESC);
   h = meta(h, 'property="og:image"', OG);
-  return h.replace('<meta property="og:locale"', () => HEAD_ADD + '<meta property="og:locale"');
+  h = h.replace('<meta property="og:locale"', () => HEAD_ADD + '<meta property="og:locale"');
+  return h.replace('</footer>', () => HUB_LINKS + '</footer>'); // 동화 모음 페이지로 가는 길 (검색로봇이 따라감)
 }
 
 export default async function middleware(req) {
