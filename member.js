@@ -60,6 +60,7 @@ var dl=document.getElementById('meDl');
 dl.innerHTML='<div class="recrow"><div class="rectxt"><b>🌙 매일 밤 카톡으로 받기'+(ME.dl?' ✅':'')+'</b><small>'+(k?k.time+'에 오늘의 동화를 카톡으로 보내드려요':'아이를 먼저 등록해 주세요')+'</small></div><div class="recbtns"><button type="button" class="btn '+(ME.dl?'btn-ghost':'btn-brand')+'" data-act="dl">'+(ME.dl?'끄기':'켜기')+'</button>'+(ME.dl?'<button type="button" class="btn btn-ghost" data-act="test">지금 받아보기</button>':'')+'</div></div>';
 dl.querySelector('[data-act=dl]').onclick=function(){ dlSet(!ME.dl); };
 var tb=dl.querySelector('[data-act=test]'); if(tb) tb.onclick=dlTest;
+dl.insertAdjacentHTML('beforeend','<div class="recrow"><div class="rectxt"><b>📖 이번 달 동화책</b><small>이번 달 동화를 책으로 묶어 PDF로 저장해요</small></div><div class="recbtns"><button type="button" class="btn btn-ghost" onclick="makeBook()">PDF 저장</button></div></div>');
 var box=document.getElementById('meRecs'); box.innerHTML='';
 ['hello','bye'].forEach(function(s){
 var has=ME.rec&&ME.rec[s];
@@ -87,6 +88,33 @@ return j;
 }
 async function dlSet(on){ var j=await dlPost({dl:on}); if(!j) return; ME.dl=j.dl; renderMe(); toast(on?'매일 밤 카톡으로 보내드릴게요 🌙':'카톡 받기를 껐어요'); }
 async function dlTest(){ var j=await dlPost({test:1}); if(!j) return; toast(j.r==='sent'?'카톡을 확인해 보세요 💌':'보내지 못했어요. 잠시 후 다시 해주세요'); }
+// 이번 달 동화책: 매일 밤 카톡과 같은 규칙(api/me.js sendOne)으로 1일~오늘 동화를 모아 인쇄창 → 'PDF로 저장'
+function makeBook(){
+var k=ME.kid; if(!k||!k.name){ toast('아이를 먼저 등록해 주세요'); return; }
+if(typeof STORIES==='undefined'){ toast('잠시 후 다시 해주세요'); return; }
+var keys=Object.keys(STORIES), liked=(k.ints||[]).filter(function(x){ return STORIES[x]; });
+var now=new Date(Date.now()+9*3600e3), y=now.getUTCFullYear(), m=now.getUTCMonth(), last=now.getUTCDate();
+var esc=function(s){ return String(s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+var nm=esc(k.name), pages='', toc='';
+for(var d=1; d<=last; d++){
+  var day=Math.floor(Date.UTC(y,m,d)/864e5), pool=day%2&&liked.length?liked:keys, s=STORIES[pool[day%pool.length]];
+  var t=s.title.replaceAll('@',nm);
+  toc+='<li><span>'+(m+1)+'월 '+d+'일</span>'+t+'</li>';
+  pages+='<section class="pg"><div class="dt">'+(m+1)+'월 '+d+'일의 동화</div><h2>'+t+'</h2><div class="bd">'+s.body.replaceAll('@','<b>'+nm+'</b>')+'</div></section>';
+}
+var w=window.open('','_blank'); if(!w){ toast('팝업이 막혔어요. 팝업을 허용해 주세요'); return; }
+w.document.write('<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>'+nm+'의 '+(m+1)+'월 동화책 - 밤톨</title>'
++'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap">'
++'<style>@page{size:A5;margin:16mm 14mm}body{margin:0;font:12.5pt/2 "Gowun Batang",serif;color:#2a2340}.pg,.cv,.tc{break-after:page}'
++'.cv{height:170mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.cv img{width:46mm;border-radius:10mm}.cv h1{font-size:22pt;margin:10mm 0 3mm}.cv p{color:#7a6fa3;margin:0}'
++'.tc h2,.pg h2{font-size:16pt;margin:0 0 5mm}.tc ol{padding-left:5mm;font-size:11pt;line-height:1.9}.tc span{display:inline-block;width:22mm;color:#7a6fa3}.dt{color:#9a8fc3;font-size:10pt}.bd b{color:#5b3fd1}'
++'.tip{font:11pt sans-serif;background:#fff6d6;padding:8px 12px;border-radius:8px;margin:10px}@media print{.tip{display:none}}</style></head><body>'
++'<div class="tip">인쇄 창에서 대상(프린터)을 <b>PDF로 저장</b>으로 고르면 PDF 파일이 돼요.</div>'
++'<div class="cv"><img src="https://bamtol.co.kr/api/img?i=apple" alt=""><h1>'+nm+'의 '+(m+1)+'월 동화책</h1><p>'+y+'년 '+(m+1)+'월 · 매일 밤 함께 읽은 '+last+'편의 이야기</p><p style="margin-top:14mm">🌙 밤톨</p></div>'
++'<div class="tc"><h2>차례</h2><ol>'+toc+'</ol></div>'+pages+'</body></html>');
+w.document.close();
+setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} },1200);
+}
 var recState=null;
 async function recToggle(slot,btn){
 if(recState){ recState.mr.stop(); return; }
