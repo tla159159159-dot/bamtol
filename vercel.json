@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/:s([^/.]+)/", "destination": "/api/page?s=:s" },
+    { "source": "/:s([^/.]+)", "destination": "/api/page?s=:s&ns=1" }
+  ]
+}
