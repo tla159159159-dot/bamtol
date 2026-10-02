@@ -1,6 +1,7 @@
 // 밤톨 한글 주소 페이지: /흥부와놀부/ 같은 동화별 페이지 + /전래동화/ 같은 모음 페이지 (검색 노출용)
 // 동화 내용은 index.html 안의 동화 목록(LIB)을 그대로 읽어 씀 → 메인에서 동화를 고치면 여기도 같이 바뀜.
 const SITE = 'https://bamtol.co.kr';
+const D0 = '2026-10-02'; // 날짜(d) 없는 기존 동화의 등록일. 새 동화는 LIB에 d:'YYYY-MM-DD' 넣으면 RSS 맨 위로 감
 const CAT = { 전래: '전래동화', 세계: '세계명작동화', 이솝: '이솝우화' };
 const HUBS = {
   잠자리동화: { h: '잠자리 동화 모음', d: '아이가 포근하게 잠드는 잠자리 동화 {n}편. 전래동화·세계명작·이솝우화를 무료로 읽고, 사람 같은 자연 음성으로 들려주세요.', f: () => true },
@@ -22,7 +23,7 @@ async function lib(host) {
     let s = f.t.replace(/\s+/g, '');
     if (seen[s]) s += f.L === '장편' ? '장편' : '단편';
     seen[s] = 1;
-    return { s, t: f.t, e: f.e, c: f.c, L: f.L, o: f.o, b: f.b || '' };
+    return { s, t: f.t, e: f.e, c: f.c, L: f.L, o: f.o, b: f.b || '', d: f.d || D0 };
   });
   return LIB;
 }
@@ -93,9 +94,35 @@ function hubPage(k, all) {
   return page({ path: '/' + k + '/', title, desc, body, ld });
 }
 
+// 사이트맵·RSS 자동 생성: 동화가 늘면 둘 다 저절로 늘어남
+function feed(kind, all) {
+  const u = p => SITE + '/' + encodeURIComponent(p) + '/';
+  const last = all.reduce((m, x) => (x.d > m ? x.d : m), D0);
+  if (kind === 'map') {
+    const row = (loc, f, p, d) => '<url><loc>' + loc + '</loc><lastmod>' + d + '</lastmod><changefreq>' + f + '</changefreq><priority>' + p + '</priority></url>\n';
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + row(SITE + '/', 'weekly', '1.0', last) +
+      Object.keys(HUBS).map(k => row(u(k), 'weekly', '0.8', last)).join('') + all.map(x => row(u(x.s), 'monthly', '0.6', x.d)).join('') + '</urlset>\n';
+  }
+  const items = all.map((x, i) => [x, i]).sort((a, b) => b[0].d.localeCompare(a[0].d) || b[1] - a[1]).slice(0, 50).map(a => a[0]);
+  const day = d => new Date(d + 'T21:00:00+09:00').toUTCString();
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>밤톨 – 우리 아이 잠자리 동화</title><link>' + SITE + '/</link>' +
+    '<description>전래동화·세계명작·이솝우화 잠자리 동화를 무료로 읽고 자연 음성으로 들어보세요.</description><language>ko</language><lastBuildDate>' + day(last) + '</lastBuildDate>\n' +
+    items.map(x => '<item><title>' + esc(x.t + ' 동화') + '</title><link>' + u(x.s) + '</link><guid isPermaLink="true">' + u(x.s) + '</guid><category>' + (CAT[x.c] || '동화') + '</category>' +
+      '<description>' + esc(x.o + ' – ' + x.b.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160) + '…') + '</description><pubDate>' + day(x.d) + '</pubDate></item>\n').join('') +
+    '</channel></rss>\n';
+}
+
 module.exports = async (req, res) => {
   const q = req.query || {};
   const s = String(q.s || '').normalize('NFC');
+  if (q.feed) {
+    try {
+      const x = feed(q.feed, await lib(req.headers.host || 'bamtol.co.kr'));
+      res.setHeader('Content-Type', q.feed === 'map' ? 'application/xml; charset=utf-8' : 'application/rss+xml; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=600, s-maxage=3600');
+      return res.status(200).send(x);
+    } catch (e) { return res.status(500).end(); }
+  }
   if (q.ns) return res.redirect(308, '/' + encodeURIComponent(s) + '/'); // 끝에 / 붙인 주소 하나로 통일
   try {
     const all = await lib(req.headers.host || 'bamtol.co.kr');
