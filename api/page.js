@@ -75,7 +75,7 @@ function storyPage(x, all) {
   const body =
     '<nav class="bc"><a href="/">홈</a> › <a href="/' + cat + '/">' + cat + '</a> › ' + esc(x.t) + '</nav>' +
     '<h1>' + x.e + ' ' + esc(x.t) + '</h1><p class="one">' + esc(x.o) + '</p><div class="meta">' + cat + ' · ' + x.L + ' · 읽는 시간 약 ' + mins(x.b) + '분</div>' +
-    '<button class="play" id="play">🔊 자연 음성으로 읽어주기</button><button class="fav" id="fav">♡ 찜하기</button>' +
+    '<button class="play" id="play">🔊 자연 음성으로 읽어주기</button><button class="fav" id="fav">♡ 찜하기</button><button class="fav" id="shr">🔗 공유하기</button>' +
     '<article class="story">' + x.b + '</article>' +
     CTA('이 동화, 우리 아이 이름으로 들려줄까요?') +
     '<h2>' + cat + ' 더 읽기</h2><ul class="list">' + rel.map(card).join('') + '</ul>' +
@@ -88,6 +88,7 @@ function storyPage(x, all) {
     'var K=' + JSON.stringify(x.t + '|' + x.L).replace(/</g, '\\u003c') + ',F=document.getElementById("fav"),ON=false;function sf(){F.textContent=ON?"♥ 찜했어요":"♡ 찜하기";}' +
     'function post(b){return fetch("/api/me",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});}' +
     'fetch("/api/me?view="+encodeURIComponent(K));fetch("/api/me").then(function(r){return r.json()}).then(function(m){if(!m.login)return;ON=(m.fav||[]).indexOf(K)>=0;sf();post({recent:K});}).catch(function(){});' +
+    'document.getElementById("shr").onclick=function(){var b=this,u=location.origin+location.pathname;if(navigator.share){navigator.share({title:document.title,text:"우리 아이랑 같이 읽어요 🌙",url:u}).catch(function(){});return;}(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(function(){b.textContent="✓ 링크 복사됨";setTimeout(function(){b.textContent="🔗 공유하기";},2000);}).catch(function(){prompt("이 주소를 복사하세요",u);});};' +
     'F.onclick=function(){post({fav:K,on:!ON}).then(function(r){if(r.status===401){location.href="/api/me?login";return;}if(r.ok){ON=!ON;sf();}});};</script>';
   const ld = { '@context': 'https://schema.org', '@graph': [
     { '@type': 'Article', headline: x.t, description: desc, inLanguage: 'ko', genre: cat, author: { '@type': 'Organization', name: '밤톨' }, publisher: { '@type': 'Organization', name: '밤톨', url: SITE + '/' }, mainEntityOfPage: SITE + '/' + x.s + '/', image: SITE + '/api/img?i=og' },
