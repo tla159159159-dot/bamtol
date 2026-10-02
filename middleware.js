@@ -15,11 +15,11 @@ const HEAD_ADD =
   '<link rel="apple-touch-icon" href="/api/img?i=apple"><link rel="manifest" href="/manifest.webmanifest"><meta name="apple-mobile-web-app-title" content="밤톨">\n'; // 홈 화면에 추가(앱처럼 쓰기)
 const HUB_LINKS = '<nav aria-label="동화 모음" style="margin-top:18px;font-size:13.5px;line-height:2">📚 동화 모음 · ' +
   [['잠자리동화', '잠자리 동화'], ['전래동화', '전래동화'], ['세계명작동화', '세계명작동화'], ['이솝우화', '이솝우화'], ['짧은동화', '짧은 동화'], ['긴동화', '긴 동화']]
-    .map(([s, n]) => '<a href="/' + s + '/" style="margin-right:12px">' + n + '</a>').join('') + '</nav>';
+    .map(([s, n]) => '<a href="/' + s + '/" style="margin-right:12px;color:var(--ink-soft)">' + n + '</a>').join('') + '</nav>';
 // 사업자 정보·정책 (주소·연락처는 받으면 ADDR/CONTACT 채우기)
 const ADDR = '서울특별시 강서구 공항대로 209', CONTACT = 'tla2642@naver.com';
 const ASK = CONTACT || '고객문의 안내 준비 중';
-const LEGAL = '<div class="foot-legal">상호 CKT컴퍼니 · 대표 최인호·안태흥 · 개인정보보호책임자 최인호<br>사업자등록번호 442-01-01103 · 통신판매업신고 제2019-서울양천-0764호 · <a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=4420101103" target="_blank" rel="noopener">사업자정보확인</a>' +
+const LEGAL = '<div class="foot-legal">상호 CKT컴퍼니 · 대표 최인호·안태흥 · 개인정보보호책임자 최인호<br>사업자등록번호 442-01-01103 · 통신판매업신고 제2019-서울양천-0764호 · <a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=4420101103" target="_blank" rel="noopener" style="color:var(--ink-soft)">사업자정보확인</a>' +
   (ADDR || CONTACT ? '<br>' + [ADDR && '주소 ' + ADDR, CONTACT && '고객문의 ' + CONTACT + ' (평일 10:00~18:00)'].filter(Boolean).join(' · ') : '') + '</div>';
 const PRIVACY = '<p>CKT컴퍼니(이하 \'회사\')는 밤톨 서비스를 운영하며 개인정보 보호법 등 관련 법령을 지킵니다.</p>' +
   '<h4>1. 수집하는 항목</h4><p>카카오 로그인: 카카오 회원번호, 닉네임<br>아이 정보(보호자가 입력): 이름 또는 애칭, 나이대, 좋아하는 것, 잠드는 시간<br>인사말 녹음(선택): 보호자가 직접 녹음하거나 올린 음성(각 20초 이내)<br>자동 생성: 접속 기록, 로그인 유지용 쿠키<br>유료 결제 시: 결제 정보는 결제대행사가 처리하며 회사는 카드번호를 저장하지 않습니다.</p>' +
@@ -49,6 +49,21 @@ function lighten(h) {
   return h.replace(/<img (?![^>]*loading=)([^>]*)>/g, (m, a) => (ABOVE.test(a) ? m : '<img loading="lazy" decoding="async" ' + a + '>'));
 }
 
+// 밤톨 가족 사이트(같은 팀이 운영): 밤엔 동화 → 낮엔 색칠·학습지, 엄마는 커뮤니티. utm 으로 밤톨에서 넘어온 방문 집계
+const FAM = [
+  ['🖍️', '콕콕 색칠공부', '오늘 밤 동화 속 친구들, 내일 낮엔 색칠해요. 가입 없이 무료 도안 100여 종', 'https://kokcolor.kr/'],
+  ['✏️', '도장쾅 학습지', '하루 한 장 뽑아서, 다 풀면 도장 쾅! 한글·수학·영어 프린트 학습지', 'https://www.dojangkwang.co.kr/'],
+  ['💬', '맘먼트', '아이 재우고 난 엄마 시간. 수면교육·육아 고민을 나누는 엄마 커뮤니티', 'https://mommoment.kr/'],
+];
+const famUrl = (u, m) => u + '?utm_source=bamtol&utm_medium=' + m;
+const FAMILY = '<section class="sec" id="family" style="padding-top:0"><div class="wrap"><div class="sec-head"><h2>밤엔 동화, 낮엔 놀이</h2><p>밤톨을 만든 팀이 엄마와 아이를 위해 함께 운영하는 곳이에요.</p></div>' +
+  '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;max-width:900px;margin:0 auto">' +
+  FAM.map(([e, n, d, u]) => '<a href="' + famUrl(u, 'home') + '" target="_blank" rel="noopener" style="display:flex;gap:14px;align-items:flex-start;padding:16px 18px;border-radius:18px;background:var(--surface);border:1px solid var(--line);text-decoration:none;color:var(--ink)">' +
+    '<div style="flex:none;font-size:28px;line-height:1.2" aria-hidden="true">' + e + '</div><div><b style="display:block;font-size:17px;margin:0 0 3px">' + n + '</b><span style="display:block;font-size:14px;line-height:1.6;color:var(--ink-soft)">' + d + '</span>' +
+    '<span style="display:inline-block;margin-top:10px;font-weight:700;font-size:14px;color:var(--brand)">바로가기 →</span></div></a>').join('') + '</div></div></section>\n';
+const FAM_FOOT = '<nav aria-label="가족 사이트" style="margin-top:6px;font-size:13.5px;line-height:2">🌱 가족 사이트 · ' +
+  FAM.map(([, n, , u]) => '<a href="' + famUrl(u, 'footer') + '" target="_blank" rel="noopener" style="margin-right:12px;color:var(--ink-soft)">' + n + '</a>').join('') + '</nav>';
+
 function seo(h) {
   h = h.replaceAll('{도메인}', 'bamtol.co.kr').replaceAll('100여 편', '130여 편');
   h = h.replace(/<link rel="icon" href="data:[^"]*">/, '');
@@ -62,7 +77,8 @@ function seo(h) {
   h = h.replace('<meta property="og:locale"', () => HEAD_ADD + '<meta property="og:locale"');
   h = legal(h);
   h = lighten(h);
-  return h.replace('</footer>', () => HUB_LINKS + '</footer>'); // 동화 모음 페이지로 가는 길 (검색로봇이 따라감)
+  h = h.replace(/<section class="sec" style="padding-top:0"><div class="wrap">\s*<style>@media\(max-width:560px\)\{\.sp-card/, m => FAMILY + m); // 안심 섹션 뒤, 광고 카드 앞
+  return h.replace('</footer>', () => HUB_LINKS + FAM_FOOT + '</footer>'); // 동화 모음 페이지로 가는 길 (검색로봇이 따라감)
 }
 
 export default async function middleware(req) {
