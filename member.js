@@ -101,7 +101,21 @@ function fixNames(root){ (root||document).querySelectorAll('.nm:not([data-fx])')
 s.setAttribute('data-fx','1'); if(!bamJong(s.textContent)) return;
 var t=s.nextSibling; if(t&&t.nodeType===3&&t.data.charAt(0)==='야') t.data='아'+t.data.slice(1); else s.insertAdjacentText('afterend','이');
 }); }
-if(typeof makeStory==='function'){ var _mk=makeStory; makeStory=function(){ _mk(); fixNames(); }; fixNames(); }
+// 동화 속 이름 반복 줄이기: 문단마다 첫 이름·대사 속 이름·부르는 말만 남기고 나머지는 '꼬마/아이'로 (한 편에 50~60번 → 25번 안팎)
+function trimNames(body){
+  var ep=body.indexOf('꼬마')<0?['꼬마','아이']:['아이'], e=0; // 동화에 '꼬마 로봇'처럼 이미 나오면 '아이'만
+  return body.split(/(<br\s*\/?>\s*<br\s*\/?>)/).map(function(par){
+    if(/^<br/.test(par)) return par;
+    var seen=false, q=0;
+    return par.replace(/「|」|@(야|에게|는|가|를|의|도|와)?/g, function(m, pt){
+      if(m==='「'){ q++; return m; } if(m==='」'){ q--; return m; }
+      if(q>0||!pt||pt==='야'||!seen){ seen=true; return m; } // 대사 속·부르는 말(안녕 ○○,)·문단 첫 이름은 그대로
+      return ep[e++%ep.length]+(pt||'');                          // 나머지는 '꼬마/아이'
+    });
+  }).join('');
+}
+if(typeof STORIES!=='undefined') Object.keys(STORIES).forEach(function(k){ STORIES[k].body=trimNames(STORIES[k].body); });
+if(typeof makeStory==='function'){ var _mk=makeStory; makeStory=function(){ _mk(); fixNames(); }; makeStory(); }
 if(typeof packEpisode==='function'){ var _pe=packEpisode; packEpisode=function(i){ _pe(i); fixNames(); }; }
 var recState=null;
 async function recToggle(slot,btn){
