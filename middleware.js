@@ -40,6 +40,14 @@ function legal(h) {
 }
 const meta = (h, attr, val) => h.replace(new RegExp('(<meta ' + attr + ' content=")[^"]*'), (_, a) => a + val);
 
+// 박혀 있던 그림 → /api/page?img= 주소로 (api/page.js imgId 와 같은 규칙). 첫 화면 밖 그림은 늦게 불러오기
+const imgId = b => b.length + '-' + b.slice(200, 216).replace(/\+/g, '-').replace(/\//g, '_');
+const ABOVE = /brand-logo|hero-clouds|hero-mascot/;
+function lighten(h) {
+  h = h.replace(/data:image\/[a-z+]+;base64,([A-Za-z0-9+/=]+)/g, (_, b) => '/api/page?img=' + imgId(b));
+  return h.replace(/<img (?![^>]*loading=)([^>]*)>/g, (m, a) => (ABOVE.test(a) ? m : '<img loading="lazy" decoding="async" ' + a + '>'));
+}
+
 function seo(h) {
   h = h.replaceAll('{도메인}', 'bamtol.co.kr').replaceAll('100여 편', '130여 편');
   h = h.replace(/<link rel="icon" href="data:[^"]*">/, '');
@@ -52,6 +60,7 @@ function seo(h) {
   h = meta(h, 'property="og:image"', OG);
   h = h.replace('<meta property="og:locale"', () => HEAD_ADD + '<meta property="og:locale"');
   h = legal(h);
+  h = lighten(h);
   return h.replace('</footer>', () => HUB_LINKS + '</footer>'); // 동화 모음 페이지로 가는 길 (검색로봇이 따라감)
 }
 
