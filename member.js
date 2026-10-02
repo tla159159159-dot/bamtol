@@ -148,8 +148,20 @@ if(!ME.login){ toast('카카오로 로그인하면 찜할 수 있어요'); setTi
 var k=storyKey(f), on=(ME.fav||[]).indexOf(k)<0;
 mePost({fav:k,on:on}).then(function(r){ return r.ok?r.json():null; }).then(function(j){ if(!j){ toast('잠시 후 다시 해주세요'); return; } ME.fav=j.fav; favBtn(); toast(on?'찜했어요 ♥':'찜을 뺐어요'); }).catch(function(){});
 }
-if(typeof openFolk==='function'){ var _of=openFolk; openFolk=function(i){ _of(i); curFolkIdx=i; favBtn();
+if(typeof openFolk==='function'){ var _of=openFolk; openFolk=function(i){ _of(i); curFolkIdx=i; favBtn(); if(LIB[i]) fetch('/api/me?view='+encodeURIComponent(storyKey(LIB[i]))).catch(function(){});
 if(ME.login&&LIB[i]){ var k=storyKey(LIB[i]); ME.recent=[k].concat((ME.recent||[]).filter(function(x){ return x!==k; })).slice(0,20); mePost({recent:k}).catch(function(){}); } }; }
+// 동화 도서관 검색: 제목·한 줄 소개로 찾기 (띄어쓰기 무시)
+var ftQ='';
+if(typeof renderFolk==='function'){ var _rf=renderFolk; renderFolk=function(){
+var q=ftQ.replace(/\s/g,''), ex=ftExpanded; if(q) ftExpanded=true; _rf(); ftExpanded=ex;
+var g=document.getElementById('ftGrid'); if(!g) return; var n=0;
+if(q) g.querySelectorAll('.ftcard').forEach(function(c){ var hit=c.textContent.replace(/\s/g,'').indexOf(q)>=0; c.style.display=hit?'':'none'; if(hit){ n++; c.classList.add('in'); } });
+var m=document.getElementById('ftMore'); if(q&&m) m.innerHTML=n?'':'<p style="text-align:center;color:var(--ink-faint,#ABA2CE)">\''+ftQ.replace(/[<>&]/g,'')+'\' 동화를 찾지 못했어요</p>';
+}; }
+(function(){ var f=document.getElementById('ftFilter'); if(!f) return;
+f.insertAdjacentHTML('beforebegin','<div style="max-width:420px;margin:0 auto 14px"><input id="ftSearch" type="search" placeholder="🔍 동화 제목으로 찾기 (예: 토끼)" aria-label="동화 검색" style="width:100%;box-sizing:border-box;border:1.5px solid var(--line-strong,#483C7C);background:var(--sunk,#241D45);color:var(--ink,#F8F5FF);border-radius:14px;padding:12px 14px;font:inherit;font-size:16px"></div>');
+document.getElementById('ftSearch').oninput=function(){ ftQ=this.value.trim(); if(ftQ){ ftCat='all'; ftLen='all'; try{ renderFilter(); renderLenFilter(); }catch(e){} } renderFolk(); };
+})();
 var recState=null;
 async function recToggle(slot,btn){
 if(recState){ recState.mr.stop(); return; }
