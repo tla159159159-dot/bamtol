@@ -35,6 +35,7 @@ function legal(h) {
   h = h.replace(/<p[^>]*>본 페이지는 서비스 준비 중 데모입니다[\s\S]*?<\/p>/, '');
   h = h.replace(/<div class="policy-note">[\s\S]*?<\/div>/, '');
   h = h.replace(/privacy:\{t:'개인정보처리방침',h:'(?:\\.|[^'\\])*'\}/, () => "privacy:{t:'개인정보처리방침',h:" + JSON.stringify(PRIVACY) + '}');
+  h = h.replace('(PDF·실물책)', '(PDF 저장)').replace(' 연말엔 실물 책으로도.', ' PDF로 저장해 오래 간직할 수 있어요.'); // 실물책은 아직 없음
   return h.replaceAll('[회사명]', 'CKT컴퍼니').replaceAll('[시행일]', '2026년 10월 2일').replaceAll('[이메일] / [전화번호]', ASK).replaceAll('[이메일]', ASK);
 }
 const meta = (h, attr, val) => h.replace(new RegExp('(<meta ' + attr + ' content=")[^"]*'), (_, a) => a + val);
