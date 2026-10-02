@@ -3,6 +3,7 @@
 // POST {kid} 또는 {rec,type,data(base64)} 저장 / {dl:true|false} 매일 밤 카톡 받기 / {test:1} 지금 한 번 받기 / DELETE ?rec= 녹음 삭제
 // POST {fav:'제목|단편', on:true|false} 찜 / {recent:'제목|단편'} 최근 읽은 동화
 // DELETE ?all : 회원 탈퇴 (내 정보·녹음·카톡 토큰 전부 삭제 + 카카오 연결 끊기)
+// GET ?view=제목|단편 : 동화 조회수 +1 (누구나) / GET ?stats : 운영 현황 (관리자만, 처음 연 사람이 관리자)
 // GET ?deliver : 매일 밤 카톡 배달 (GitHub Actions가 19~24시 10분마다 부름, 여러 번 불려도 하루 1번만 보냄)
 const crypto = require('crypto');
 const KEY = process.env.KAKAO_REST_KEY;
@@ -69,6 +70,25 @@ async function sendOne(id, p) {
   const r = await fetch('https://kapi.kakao.com/v2/api/talk/memo/default/send', { method: 'POST', headers: { Authorization: 'Bearer ' + t.access_token, 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' }, body: new URLSearchParams({ template_object: JSON.stringify(tpl) }) }).then(r => r.json());
   return r.result_code === 0 ? 'sent' : 'fail:' + (r.code || '');
 }
+// 운영 현황 (관리자 전용): 회원 수·아이 등록·녹음·카톡 받기·가입 추이·많이 읽힌 동화. ponytail: 회원 키를 매번 SCAN, 1만 명 넘으면 카운터로 바꾸기
+async function stats(id) {
+  let admin = await redis(['GET', 'bt:admin']);
+  if (!admin) { await redis(['SET', 'bt:admin', id, 'NX']); admin = await redis(['GET', 'bt:admin']); } // 처음 연 사람이 관리자
+  if (admin !== id) return null;
+  const ids = []; let cur = '0';
+  do { const r = await redis(['SCAN', cur, 'MATCH', 'bt:u:*', 'COUNT', 500]); cur = String(r[0]); ids.push(...r[1]); } while (cur !== '0');
+  const ps = [];
+  for (let i = 0; i < ids.length; i += 100) ps.push(...((await redis(['MGET', ...ids.slice(i, i + 100)])) || []).map(x => JSON.parse(x || '{}')));
+  const pairs = a => { const o = {}; for (let i = 0; i < (a || []).length; i += 2) o[a[i]] = +a[i + 1]; return o; };
+  const joins = pairs(await redis(['HGETALL', 'bt:joins'])), views = pairs(await redis(['HGETALL', 'bt:views']));
+  return {
+    members: ids.length, kids: ps.filter(p => p.kid).length, recs: ps.filter(p => p.r && Object.keys(p.r).length).length,
+    dl: +(await redis(['SCARD', 'bt:dl'])) || 0, favs: ps.reduce((n, p) => n + (p.fav || []).length, 0),
+    joins: Object.keys(joins).sort().slice(-30).map(d => [d, joins[d]]),
+    top: Object.keys(views).sort((a, b) => views[b] - views[a]).slice(0, 15).map(k => [k, views[k]]),
+    totalViews: Object.values(views).reduce((a, b) => a + b, 0),
+  };
+}
 async function deliver() { // ponytail: 회원을 한 명씩 차례로 처리, 수백 명 넘으면 나눠 보내기
   const now = kst(), date = now.toISOString().slice(0, 10), m = now.getUTCHours() * 60 + now.getUTCMinutes();
   const ids = (await redis(['SMEMBERS', 'bt:dl'])) || [], out = {};
@@ -90,6 +110,11 @@ module.exports = async (req, res) => {
   const q = req.query || {};
   res.setHeader('Cache-Control', 'no-store');
   if (!SIGN || !RURL) return res.status(500).end();
+  if (q.view !== undefined) { // ponytail: 형식만 검사, 이상한 키가 쌓이면 그때 목록으로 거르기
+    const key = str(q.view, 60);
+    if (/^[^|]{1,40}\|(단편|장편)$/.test(key)) await redis(['HINCRBY', 'bt:views', key, 1]).catch(() => {});
+    return res.status(204).end();
+  }
   if (q.deliver !== undefined) { try { return res.status(200).json(await deliver()); } catch (e) { return res.status(500).end(); } }
 
   if (q.logout !== undefined) {
@@ -113,6 +138,7 @@ module.exports = async (req, res) => {
       if (!u.id) return res.redirect(302, '/?login=fail');
       const nick = (u.properties && u.properties.nickname) || (u.kakao_account && u.kakao_account.profile && u.kakao_account.profile.nickname) || '';
       let dl = false;
+      try { if (!(await redis(['EXISTS', 'bt:u:' + u.id]))) { await putProfile(String(u.id), { r: {}, j: kst().toISOString().slice(0, 10) }); await redis(['HINCRBY', 'bt:joins', kst().toISOString().slice(0, 10), 1]); } } catch (e) {} // 처음 가입 집계 (실패해도 로그인은 됨)
       if (String(t.scope || '').split(' ').includes('talk_message') && t.refresh_token) { // 카톡 받기 동의한 회원만 토큰 보관
         await redis(['SET', 'bt:tk:' + u.id, JSON.stringify({ rt: t.refresh_token })]);
         if (String(q.state).endsWith('.m')) { const p = await getProfile(u.id); if (p.kid) { p.dl = dl = true; await putProfile(u.id, p); await redis(['SADD', 'bt:dl', String(u.id)]); } }
@@ -127,6 +153,7 @@ module.exports = async (req, res) => {
   if (!me) return req.method === 'GET' && !q.rec ? res.status(200).json({ login: false }) : res.status(401).end();
 
   try {
+    if (req.method === 'GET' && q.stats !== undefined) return res.status(200).json(await stats(me.id) || {});
     if (req.method === 'GET' && q.rec) {
       if (!SLOTS.includes(q.rec)) return res.status(400).end();
       const raw = await redis(['GET', 'bt:r:' + me.id + ':' + q.rec]);
