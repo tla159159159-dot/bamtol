@@ -27,6 +27,7 @@ module.exports = async (req, res) => {
     if (!d) return res.status(404).end();
     res.setHeader('Content-Type', TYPES[k][0]);
     res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800');
+    res.setHeader('Access-Control-Allow-Origin', '*'); // 공개 이미지라 다른 사이트에서 불러와도 됨
     return res.status(200).send(Buffer.from(d, 'base64'));
   } catch (e) { return res.status(500).end(); }
 };
