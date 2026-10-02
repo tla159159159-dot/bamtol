@@ -7,6 +7,7 @@ const TITLE = '밤톨 | 우리 아이 맞춤 잠자리 동화 – 매일 밤 이
 const DESC = '아이 이름만 등록하면 매일 밤 우리 아이가 주인공인 맞춤 동화가 도착해요. 전래동화·세계명작·이솝우화 130여 편 무료, 사람 같은 자연 음성으로 읽어주고 엄마·아빠 목소리 인사말까지. 카드 없이 무료로 시작하세요.';
 const OG = SITE + '/api/img?i=og';
 const HEAD_ADD =
+  '<meta name="naver-site-verification" content="8e72dd3eecc2e93d11a8101310db57606e48c073" />' +
   '<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">' +
   '<meta property="og:image:alt" content="밤톨 – 우리 아이 맞춤 잠자리 동화">' +
   '<meta name="twitter:image" content="' + OG + '">' +
