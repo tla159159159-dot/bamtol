@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Allow: /api/img
+Allow: /api/page?img=
 Disallow: /api/
 Disallow: /voice-test.html
 
