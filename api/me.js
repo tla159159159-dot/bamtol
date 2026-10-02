@@ -1,6 +1,7 @@
 // 밤톨 회원: 카카오 로그인 + 아이 정보·인사말 녹음 저장 (Upstash Redis 무료 플랜 사용)
 // GET ?login 로그인 시작 / ?code= 카카오 콜백 / ?logout / (없음) 내 정보 / ?rec=hello|bye 녹음 듣기
 // POST {kid} 또는 {rec,type,data(base64)} 저장 / {dl:true|false} 매일 밤 카톡 받기 / {test:1} 지금 한 번 받기 / DELETE ?rec= 녹음 삭제
+// POST {fav:'제목|단편', on:true|false} 찜 / {recent:'제목|단편'} 최근 읽은 동화
 // DELETE ?all : 회원 탈퇴 (내 정보·녹음·카톡 토큰 전부 삭제 + 카카오 연결 끊기)
 // GET ?deliver : 매일 밤 카톡 배달 (GitHub Actions가 19~24시 10분마다 부름, 여러 번 불려도 하루 1번만 보냄)
 const crypto = require('crypto');
@@ -137,7 +138,7 @@ module.exports = async (req, res) => {
     }
     if (req.method === 'GET') {
       const p = await getProfile(me.id);
-      return res.status(200).json({ login: true, nick: me.n, kid: p.kid || null, rec: p.r || {}, dl: !!p.dl });
+      return res.status(200).json({ login: true, nick: me.n, kid: p.kid || null, rec: p.r || {}, dl: !!p.dl, fav: p.fav || [], recent: p.recent || [] });
     }
     // 쓰기는 우리 사이트에서 온 요청만
     const origin = req.headers.origin || '';
@@ -173,6 +174,12 @@ module.exports = async (req, res) => {
         if (!kid) return res.status(400).end();
         p.kid = kid;
       }
+      if (b.fav !== undefined || b.recent !== undefined) { // 동화 키 = 제목|단편/장편
+        const key = str(b.fav !== undefined ? b.fav : b.recent, 60);
+        if (!/^[^|]{1,40}\|(단편|장편)$/.test(key)) return res.status(400).end();
+        if (b.fav !== undefined) { p.fav = (p.fav || []).filter(x => x !== key); if (b.on) p.fav.unshift(key); p.fav = p.fav.slice(0, 100); }
+        else p.recent = [key].concat((p.recent || []).filter(x => x !== key)).slice(0, 20);
+      }
       if (b.dl !== undefined || b.test !== undefined) {
         if (!p.kid) return res.status(409).json({ need: 'kid' });
         if (!(await redis(['EXISTS', 'bt:tk:' + me.id]))) return res.status(409).json({ need: 'consent' });
@@ -190,7 +197,7 @@ module.exports = async (req, res) => {
         p.r[b.rec] = Date.now();
       }
       await putProfile(me.id, p);
-      return res.status(200).json({ ok: true, kid: p.kid || null, rec: p.r, dl: !!p.dl });
+      return res.status(200).json({ ok: true, kid: p.kid || null, rec: p.r, dl: !!p.dl, fav: p.fav || [], recent: p.recent || [] });
     }
     return res.status(405).end();
   } catch (e) { return res.status(500).end(); }
