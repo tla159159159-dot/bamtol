@@ -87,7 +87,7 @@ function storyPage(x, all) {
     // 찜 + 최근 읽은 동화 (로그인한 회원만 저장, 안 했으면 찜 누를 때 카카오 로그인으로)
     'var K=' + JSON.stringify(x.t + '|' + x.L).replace(/</g, '\\u003c') + ',F=document.getElementById("fav"),ON=false;function sf(){F.textContent=ON?"♥ 찜했어요":"♡ 찜하기";}' +
     'function post(b){return fetch("/api/me",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});}' +
-    'fetch("/api/me").then(function(r){return r.json()}).then(function(m){if(!m.login)return;ON=(m.fav||[]).indexOf(K)>=0;sf();post({recent:K});}).catch(function(){});' +
+    'fetch("/api/me?view="+encodeURIComponent(K));fetch("/api/me").then(function(r){return r.json()}).then(function(m){if(!m.login)return;ON=(m.fav||[]).indexOf(K)>=0;sf();post({recent:K});}).catch(function(){});' +
     'F.onclick=function(){post({fav:K,on:!ON}).then(function(r){if(r.status===401){location.href="/api/me?login";return;}if(r.ok){ON=!ON;sf();}});};</script>';
   const ld = { '@context': 'https://schema.org', '@graph': [
     { '@type': 'Article', headline: x.t, description: desc, inLanguage: 'ko', genre: cat, author: { '@type': 'Organization', name: '밤톨' }, publisher: { '@type': 'Organization', name: '밤톨', url: SITE + '/' }, mainEntityOfPage: SITE + '/' + x.s + '/', image: SITE + '/api/img?i=og' },
