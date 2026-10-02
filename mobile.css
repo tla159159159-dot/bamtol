@@ -1,0 +1,40 @@
+/* 밤톨 모바일 다듬기 (member.js 가 불러옴) */
+/* 모든 화면: 요금표 혜택 줄이 칸칸이 깨지던 것 수정 */
+.feat li{display:block;position:relative;padding-left:28px}
+.feat li svg{position:absolute;left:0;top:3px;margin:0}
+[id]{scroll-margin-top:84px}
+
+@media (max-width:720px){
+  /* 메뉴: 로고 아래 한 줄, 옆으로 밀어서 보기 */
+  .nav-in{flex-wrap:wrap;height:auto;padding-top:8px;gap:8px 10px}
+  .nav-right{margin-left:auto}
+  .nav-links{display:flex!important;order:3;width:100%;margin:0 0 8px;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .nav-links::-webkit-scrollbar{display:none}
+  .nav-links a{flex:none;padding:8px 13px;font-size:13.5px;background:var(--surface-2);color:var(--ink)}
+  [id]{scroll-margin-top:116px}
+
+  /* 떠다니는 ⚙️ 버튼이 글을 가려서 숨김 — '읽어주는 목소리 ▸ 바꾸기' 버튼이 대신함 */
+  .gearbtn{display:none!important}
+
+  /* 손가락으로 누르기 쉬운 크기 (최소 40px) */
+  .thm,.vbtn,[data-bgmbtn],[data-greetbtn],.bgmsel{min-height:40px}
+  .thm{padding:9px 14px}
+  footer a{display:inline-block;padding:10px 4px}
+  .recbtns .btn,.mekid .btn{min-height:38px}
+
+  /* 너무 작던 글씨 키우기 */
+  .book-top .day,.acard .an,.ftag,.flen,.prec,.pbadge,.pkhint,.tier-badge,.price-mini span,.ftchip span,button em{font-size:12.5px!important}
+  footer p,footer p[style]{font-size:12.5px!important}
+  [style*="font-size:11px"]{font-size:12px!important}
+
+  /* 꾸밈 그림이 글자를 덮지 않게 */
+  .gift-deco{display:none}
+  .mascot-deco{width:58px}
+
+  /* 아래 고정 버튼에 마지막 내용·알림이 가리지 않게 */
+  body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+
+  /* 아이폰에서 입력할 때 화면이 확대되지 않게 */
+  input,select,textarea{font-size:16px!important}
+}
