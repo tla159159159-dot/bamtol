@@ -64,10 +64,12 @@ var esc=function(s){ return String(s).replace(/[&<>"]/g,function(c){ return {'&'
 var nm=esc(kid.name), keys=Object.keys(S), liked=(kid.ints||[]).filter(function(x){ return S[x]; });
 var now=new Date(Date.now()+9*3600e3), y=now.getUTCFullYear(), m=now.getUTCMonth(), last=now.getUTCDate();
 // 매일 밤 카톡과 같은 규칙(api/me.js sendOne)으로 1일~오늘 동화 고르기
+// 받침 있는 이름은 하준이는 / 하준아 처럼 (member.js bamJong 이 알려줌)
+function nf(t,w){ return t.replace(/@(야)?/g,function(_,ya){ return w+(O.BOOK.jong?(ya?'아':'이'):(ya||'')); }); }
 var list=[];
 for(var d=1; d<=last; d++){
   var day=Math.floor(Date.UTC(y,m,d)/864e5), pool=day%2&&liked.length?liked:keys, th=pool[day%pool.length];
-  list.push({d:d, th:th, t:S[th].title.replaceAll('@',nm), b:S[th].body.replaceAll('@','<b>'+nm+'</b>')});
+  list.push({d:d, th:th, t:nf(S[th].title,nm), b:nf(S[th].body,'<b>'+nm+'</b>')});
 }
 document.title=kid.name+'의 '+(m+1)+'월 동화책 - 밤톨';
 var pageNo=0;
