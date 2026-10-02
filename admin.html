@@ -28,12 +28,11 @@ a{color:#C9B8FF}
 var esc=function(s){ return String(s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
 fetch('/api/me?stats',{cache:'no-store'}).then(function(r){ return r.status===401?{need:1}:r.json(); }).then(function(d){
   var out=document.getElementById('out'), sub=document.getElementById('sub');
-  if(d.need){ sub.textContent=''; out.innerHTML='<div class="msg">관리자 카카오 계정으로 로그인해 주세요.<br><a href="/api/me?login">카카오 로그인 →</a></div>'; return; }
+  if(d.need||d.login===false){ sub.textContent=''; out.innerHTML='<div class="msg">관리자 카카오 계정으로 로그인해 주세요.<br><a href="/api/me?login">카카오 로그인 →</a></div>'; return; }
   if(!('members' in d)){ sub.textContent=''; out.innerHTML='<div class="msg">관리자만 볼 수 있어요.</div>'; return; }
   sub.textContent=new Date().toLocaleString('ko-KR')+' 기준';
   var tile=function(n,l){ return '<div class="t"><b>'+n+'</b><span>'+l+'</span></div>'; };
   var max=Math.max.apply(null,d.joins.map(function(x){ return x[1]; }).concat([1]));
-  var tmax=Math.max.apply(null,d.top.map(function(x){ return x[1]; }).concat([1]));
   out.innerHTML='<div class="tiles">'+tile(d.members,'가입 회원')+tile(d.kids,'아이 등록')+tile(d.dl,'매일 밤 카톡 받기')+tile(d.recs,'인사말 녹음')+tile(d.favs,'찜한 동화(합계)')+tile(d.totalViews,'동화 조회수')+'</div>'
    +'<h2>📈 날짜별 가입</h2>'+(d.joins.length?d.joins.map(function(x){ return '<div class="bar"><em>'+x[0].slice(5)+'</em><i style="width:'+Math.round(x[1]/max*70)+'%"></i>'+x[1]+'</div>'; }).join(''):'<p class="sub">아직 기록이 없어요 (오늘부터 집계)</p>')
    +'<h2>📚 많이 읽힌 동화</h2>'+(d.top.length?'<table>'+d.top.map(function(x,i){ var k=x[0].split('|'); return '<tr><td>'+(i+1)+'. '+esc(k[0])+' <span style="color:#ABA2CE;font-size:12px">'+esc(k[1])+'</span></td><td>'+x[1]+'회</td></tr>'; }).join('')+'</table>':'<p class="sub">아직 기록이 없어요 (오늘부터 집계)</p>');
