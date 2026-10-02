@@ -1,6 +1,7 @@
 // 밤톨 회원: 카카오 로그인 + 아이 정보·인사말 녹음 저장 (Upstash Redis 무료 플랜 사용)
 // GET ?login 로그인 시작 / ?code= 카카오 콜백 / ?logout / (없음) 내 정보 / ?rec=hello|bye 녹음 듣기
 // POST {kid} 또는 {rec,type,data(base64)} 저장 / {dl:true|false} 매일 밤 카톡 받기 / {test:1} 지금 한 번 받기 / DELETE ?rec= 녹음 삭제
+// DELETE ?all : 회원 탈퇴 (내 정보·녹음·카톡 토큰 전부 삭제 + 카카오 연결 끊기)
 // GET ?deliver : 매일 밤 카톡 배달 (GitHub Actions가 19~24시 10분마다 부름, 여러 번 불려도 하루 1번만 보냄)
 const crypto = require('crypto');
 const KEY = process.env.KAKAO_REST_KEY;
@@ -143,6 +144,21 @@ module.exports = async (req, res) => {
     if (origin && !/^https:\/\/(www\.)?bamtol\.co\.kr$/.test(origin)) return res.status(403).end();
     const p = await getProfile(me.id);
     p.r = p.r || {};
+    if (req.method === 'DELETE' && q.all !== undefined) {
+      const tk = JSON.parse((await redis(['GET', 'bt:tk:' + me.id])) || 'null');
+      if (tk) { // 카톡 받기 동의한 회원은 토큰이 있어서 카카오 앱 연결까지 끊음 (실패해도 우리 쪽 정보는 지움)
+        try {
+          const form = { grant_type: 'refresh_token', client_id: KEY, refresh_token: tk.rt };
+          if (SECRET) form.client_secret = SECRET;
+          const t = await fetch('https://kauth.kakao.com/oauth/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' }, body: new URLSearchParams(form) }).then(r => r.json());
+          if (t.access_token) await fetch('https://kapi.kakao.com/v1/user/unlink', { method: 'POST', headers: { Authorization: 'Bearer ' + t.access_token } });
+        } catch (e) {}
+      }
+      for (const k of ['bt:u:' + me.id, 'bt:tk:' + me.id].concat(SLOTS.map(s => 'bt:r:' + me.id + ':' + s))) await redis(['DEL', k]);
+      await redis(['SREM', 'bt:dl', me.id]);
+      res.setHeader('Set-Cookie', 'bt=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax');
+      return res.status(200).json({ ok: true });
+    }
     if (req.method === 'DELETE') {
       if (!SLOTS.includes(q.rec)) return res.status(400).end();
       await redis(['DEL', 'bt:r:' + me.id + ':' + q.rec]);
