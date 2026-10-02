@@ -42,7 +42,7 @@ if(!m){
 document.body.insertAdjacentHTML('beforeend','<div class="modal setmodal" id="meModal" hidden role="dialog" aria-modal="true" aria-label="내 밤톨" onclick="if(event.target===this)closeMe()"><div class="setpanel">'
 +'<h3 id="meTitle"></h3><p class="setdesc">아이 정보와 인사말은 카카오 계정에 저장돼서 휴대폰을 바꿔도 그대로예요.</p>'
 +'<label class="setlabel">우리 아이</label><div class="mekid"><span id="meKid"></span><button type="button" class="btn btn-ghost" onclick="closeMe();openReg()">수정</button></div>'
-+'<div id="meDl"></div>'
++'<div id="meDl"></div><div id="meFav"></div>'
 +'<label class="setlabel">👩 엄마·아빠 목소리 인사말</label><p class="setdesc" style="margin-top:2px">동화 시작과 끝에 내 목소리가 나와요. 각 20초까지.</p>'
 +'<div id="meRecs"></div>'
 +'<div class="setbtns"><button type="button" class="btn btn-ghost" onclick="location.href=\'/api/me?logout\'">로그아웃</button><button type="button" class="btn btn-brand" onclick="closeMe()">닫기</button></div>'
@@ -62,6 +62,11 @@ dl.innerHTML='<div class="recrow"><div class="rectxt"><b>🌙 매일 밤 카톡�
 dl.querySelector('[data-act=dl]').onclick=function(){ dlSet(!ME.dl); };
 var tb=dl.querySelector('[data-act=test]'); if(tb) tb.onclick=dlTest;
 dl.insertAdjacentHTML('beforeend','<div class="recrow"><div class="rectxt"><b>📖 이번 달 동화책</b><small>이번 달 동화를 책으로 묶어 PDF로 저장해요</small></div><div class="recbtns"><button type="button" class="btn btn-ghost" onclick="makeBook()">PDF 저장</button></div></div>');
+// 찜·최근 읽은 동화 목록 (누르면 바로 열림)
+var fv=document.getElementById('meFav');
+if(fv&&typeof LIB!=='undefined'){ var chip=function(key){ var i=libIndex(key); return i<0?'':'<button type="button" class="thm" style="margin:6px 6px 0 0" onclick="closeMe();openFolk('+i+')">'+LIB[i].e+' '+LIB[i].t+'</button>'; };
+var fs=(ME.fav||[]).map(chip).join(''), rs=(ME.recent||[]).slice(0,8).map(chip).join('');
+fv.innerHTML=(fs?'<label class="setlabel">❤ 찜한 동화</label><div>'+fs+'</div>':'')+(rs?'<label class="setlabel">🕘 최근 읽은 동화</label><div>'+rs+'</div>':'')+(!fs&&!rs?'<p class="setdesc" style="margin-top:10px">동화를 읽다가 ♡ 찜을 누르면 여기에 모여요.</p>':''); }
 var box=document.getElementById('meRecs'); box.innerHTML='';
 ['hello','bye'].forEach(function(s){
 var has=ME.rec&&ME.rec[s];
@@ -127,6 +132,24 @@ try{ localStorage.removeItem('bamtol_kid'); }catch(e){}
 toast('탈퇴가 완료됐어요. 그동안 고마웠어요 🌙'); setTimeout(function(){ location.href='/'; },1500);
 }).catch(function(){ b.disabled=false; b.textContent='회원 탈퇴'; delete b.dataset.ok; toast('탈퇴하지 못했어요. 잠시 후 다시 해주세요'); });
 }
+// 찜·최근 읽은 동화: 동화 키 = 제목|단편/장편 (동화 페이지 api/page.js 와 같은 키). 로그인한 회원만 저장
+function storyKey(f){ return f.t+'|'+(f.L||'단편'); }
+function libIndex(key){ if(typeof LIB==='undefined') return -1; for(var i=0;i<LIB.length;i++) if(storyKey(LIB[i])===key) return i; return -1; }
+function mePost(b){ return fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}); }
+var curFolkIdx=-1;
+function favBtn(){
+var b=document.getElementById('ftFav');
+if(!b){ var row=document.querySelector('#ftModal .fbtns'); if(!row) return; row.insertAdjacentHTML('beforeend','<button class="btn btn-ghost" id="ftFav" type="button" onclick="favToggle()"></button>'); b=document.getElementById('ftFav'); }
+var f=LIB[curFolkIdx]; b.textContent=(f&&ME.login&&(ME.fav||[]).indexOf(storyKey(f))>=0)?'♥ 찜함':'♡ 찜';
+}
+function favToggle(){
+var f=LIB[curFolkIdx]; if(!f) return;
+if(!ME.login){ toast('카카오로 로그인하면 찜할 수 있어요'); setTimeout(kakaoLogin,900); return; }
+var k=storyKey(f), on=(ME.fav||[]).indexOf(k)<0;
+mePost({fav:k,on:on}).then(function(r){ return r.ok?r.json():null; }).then(function(j){ if(!j){ toast('잠시 후 다시 해주세요'); return; } ME.fav=j.fav; favBtn(); toast(on?'찜했어요 ♥':'찜을 뺐어요'); }).catch(function(){});
+}
+if(typeof openFolk==='function'){ var _of=openFolk; openFolk=function(i){ _of(i); curFolkIdx=i; favBtn();
+if(ME.login&&LIB[i]){ var k=storyKey(LIB[i]); ME.recent=[k].concat((ME.recent||[]).filter(function(x){ return x!==k; })).slice(0,20); mePost({recent:k}).catch(function(){}); } }; }
 var recState=null;
 async function recToggle(slot,btn){
 if(recState){ recState.mr.stop(); return; }
@@ -167,11 +190,12 @@ document.querySelectorAll('[data-voicebtn]').forEach(function(v){ var row=v.clos
 // 아이 등록하면 로그인 상태일 때 서버에도 저장
 if(typeof submitReg==='function'){ var _sr=submitReg; submitReg=function(){ _sr(); if(ME.login){ try{ var k=JSON.parse(localStorage.getItem('bamtol_kid')||'null'); if(k) meSave({kid:k}).then(function(){ if(dlAfterReg){ dlAfterReg=false; dlSet(true); } }).catch(function(){}); }catch(e){} } }; }
 var p=new URLSearchParams(location.search).get('login');
-var sp=new URLSearchParams(location.search), dlOn=sp.get('dl'), tonight=sp.get('tonight');
-if(p||tonight){ history.replaceState(null,'',location.pathname+location.hash); }
+var sp=new URLSearchParams(location.search), dlOn=sp.get('dl'), tonight=sp.get('tonight'), qn=(sp.get('name')||'').trim().slice(0,8);
+if(p||tonight||qn){ history.replaceState(null,'',location.pathname+location.hash); }
 if(p){ setTimeout(function(){ toast(p!=='ok'?'로그인하지 못했어요. 다시 시도해 주세요':dlOn?'매일 밤 카톡으로 보내드릴게요 🌙':'카카오 로그인 완료! 🌙'); },600); }
 renderMe();
 meLoad().then(function(){ // 카톡 링크로 들어오면 오늘 밤 동화 바로 열기
+if(qn){ var ki=document.getElementById('kidName'); if(ki){ ki.value=qn; makeStory(); go('#try'); setTimeout(function(){ toast(qn+' 이야기를 만들었어요 🌙 마음에 들면 아이를 등록해 매일 밤 받아보세요'); },700); } return; } // 동화 페이지에서 이름 넣고 들어온 경우
 if(!tonight||typeof STORIES==='undefined'||!STORIES[tonight]) return;
 theme=tonight; document.querySelectorAll('.thm[data-thm]').forEach(function(x){ x.setAttribute('aria-pressed', x.dataset.thm===tonight?'true':'false'); });
 makeStory(); go('#try');
