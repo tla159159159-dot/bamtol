@@ -1,0 +1,12 @@
+# 밤톨 매일 밤 카톡 배달: 저녁 7시~밤 12시(한국시간) 10분마다 배달 주소를 부름
+# 여러 번 불려도 회원마다 하루 한 번만 보냄 (api/me.js 의 deliver)
+name: deliver
+on:
+  schedule:
+    - cron: '*/10 10-15 * * *'
+  workflow_dispatch:
+jobs:
+  call:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS 'https://bamtol.co.kr/api/me?deliver'
