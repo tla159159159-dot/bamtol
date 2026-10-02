@@ -212,6 +212,9 @@ if(!tonight||typeof STORIES==='undefined'||!STORIES[tonight]) return;
 theme=tonight; document.querySelectorAll('.thm[data-thm]').forEach(function(x){ x.setAttribute('aria-pressed', x.dataset.thm===tonight?'true':'false'); });
 makeStory(); go('#try');
 });
+// PLUS 결제(나이스페이) 열기 전: 'PLUS 시작하기'가 결제 없이 가짜 '구독중' 화면을 띄우지 않게, 지금 무료로 되는 매일 밤 카톡·동화책으로 안내
+// 결제 붙일 때 이 줄을 결제창 열기로 바꾸기
+if(typeof openMember==='function') openMember=function(){ if(ME.login){ toast('PLUS 결제는 곧 열려요 · 지금은 매일 밤 카톡과 동화책 PDF를 무료로 써보세요 🌙'); openMe(); return; } toast('PLUS 결제는 곧 열려요 · 지금은 카카오 로그인만 하면 매일 밤 카톡 동화를 무료로 받아요 🌙'); setTimeout(function(){ location.href='/api/me?login=msg'; },1600); };
 // 새 동화(new-stories.json, 주 3편 추가)를 동화 목록 맨 앞에 넣기
 fetch('/new-stories.json').then(function(r){ return r.ok?r.json():[]; }).then(function(a){ if(!a.length||typeof LIB==='undefined') return; a.forEach(function(x){ LIB.unshift(x); }); try{ renderFilter(); renderLenFilter(); renderFolk(); }catch(e){} }).catch(function(){});
 })();
