@@ -17,7 +17,7 @@ const HUB_LINKS = '<nav aria-label="동화 모음" style="margin-top:18px;font-s
   [['잠자리동화', '잠자리 동화'], ['전래동화', '전래동화'], ['세계명작동화', '세계명작동화'], ['이솝우화', '이솝우화'], ['짧은동화', '짧은 동화'], ['긴동화', '긴 동화']]
     .map(([s, n]) => '<a href="/' + s + '/" style="margin-right:12px">' + n + '</a>').join('') + '</nav>';
 // 사업자 정보·정책 (주소·연락처는 받으면 ADDR/CONTACT 채우기)
-const ADDR = '', CONTACT = '';
+const ADDR = '서울특별시 강서구 공항대로 209', CONTACT = 'tla2642@naver.com';
 const ASK = CONTACT || '고객문의 안내 준비 중';
 const LEGAL = '<div class="foot-legal">상호 CKT컴퍼니 · 대표 최인호·안태흥 · 개인정보보호책임자 최인호<br>사업자등록번호 442-01-01103 · 통신판매업신고 제2019-서울양천-0764호 · <a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=4420101103" target="_blank" rel="noopener">사업자정보확인</a>' +
   (ADDR || CONTACT ? '<br>' + [ADDR && '주소 ' + ADDR, CONTACT && '고객문의 ' + CONTACT + ' (평일 10:00~18:00)'].filter(Boolean).join(' · ') : '') + '</div>';
