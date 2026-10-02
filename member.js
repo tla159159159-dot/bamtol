@@ -94,11 +94,12 @@ var r=await fetch('/api/me?rec='+slot,{method:'DELETE'}); if(!r.ok){ toast('삭�
 ME.rec=(await r.json()).rec; renderMe(); toast('삭제했어요');
 }
 (function(){
+var ln=document.createElement('link'); ln.rel='stylesheet'; ln.href='/mobile.css'; document.head.appendChild(ln); // 모바일 다듬기
 var st=document.createElement('style');
 st.textContent='.kakaobtn{display:inline-flex;align-items:center;gap:6px;background:#FEE500;color:#191919;border:0;border-radius:12px;padding:9px 14px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap}'
 +'.mebtn{background:transparent;color:var(--ink,#F8F5FF);border:1.5px solid var(--line-strong,#483C7C);border-radius:12px;padding:8px 12px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}'
 +'.nav-right{display:flex;align-items:center;gap:8px}#meBox{display:inline-flex}'
-+'.mekid{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1.5px solid var(--line-strong,#483C7C);border-radius:12px;background:var(--sunk,#241D45)}.mekid .btn{padding:7px 12px;font-size:13px}'
++'.mekid{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1.5px solid var(--line-strong,#483C7C);border-radius:12px;background:var(--sunk,#241D45)}.mekid .btn{padding:7px 12px;font-size:13px;white-space:nowrap;flex:none}'
 +'.recrow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;margin-top:8px;border:1.5px solid var(--line-strong,#483C7C);border-radius:12px;background:var(--sunk,#241D45)}'
 +'.rectxt{display:flex;flex-direction:column;gap:2px;min-width:0}.rectxt small{color:var(--ink-faint,#ABA2CE);font-size:12px}.recbtns{display:flex;flex-wrap:wrap;gap:6px}.recbtns .btn{padding:7px 11px;font-size:13px}.recfile{cursor:pointer}'
 +'@media (max-width:560px){.kakaobtn .kl{display:none}.kakaobtn{padding:9px 10px}.nav-right .btn{padding-left:12px;padding-right:12px}}';
