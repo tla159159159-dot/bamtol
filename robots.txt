@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Allow: /api/img
+Disallow: /api/
+Disallow: /voice-test.html
+
+Sitemap: https://bamtol.co.kr/sitemap.xml
