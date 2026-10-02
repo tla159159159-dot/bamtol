@@ -1,0 +1,15 @@
+{
+  "name": "밤톨 – 우리 아이 맞춤 잠자리 동화",
+  "short_name": "밤톨",
+  "description": "매일 밤 우리 아이가 주인공인 잠자리 동화",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#181328",
+  "theme_color": "#6B48D9",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
