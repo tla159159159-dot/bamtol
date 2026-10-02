@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>밤톨 동화책</title>
+<!-- 이번 달 동화책: 메인 화면 '내 밤톨 → PDF 저장'이 이 창을 열어 줌. 동화·아이 정보는 메인 창(opener)에서 가져옴 -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap">
+<style>
+@page{size:148mm 210mm;margin:0}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+html,body{margin:0;background:#cfc8e6}
+body{font-family:"Gowun Batang",serif;color:#2b2445}
+.page{width:148mm;height:210mm;position:relative;overflow:hidden;background:#fffaf1;margin:8mm auto;box-shadow:0 2mm 6mm rgba(0,0,0,.18);break-after:page;page-break-after:always}
+.page:last-child{break-after:auto}
+.frame{position:absolute;inset:7mm;border:.4mm solid #eadcc0;border-radius:4mm;pointer-events:none}
+.frame:after{content:"";position:absolute;inset:1.2mm;border:.2mm solid #f1e7d2;border-radius:3mm}
+.in{position:absolute;left:17mm;right:17mm;top:17mm;bottom:22mm}
+.no{position:absolute;bottom:10.5mm;left:0;right:0;text-align:center;font:9pt "Gowun Batang",serif;color:#a597c9;letter-spacing:.5mm}
+/* 표지 */
+.dark{background:radial-gradient(120% 90% at 70% 30%,#3a2b80 0%,#211852 55%,#160f38 100%);color:#fff}
+.star{position:absolute;color:#ffe08a;opacity:.85}
+.mascot{width:78mm;height:78mm;margin:20mm auto 0;background:url(/api/img?i=og) no-repeat;background-size:217.7mm auto;background-position:-129.7mm -19mm;border-radius:50%} /* 대표 이미지에서 밤톨 캐릭터만 동그랗게 */
+.cv h1{font-size:25pt;line-height:1.35;text-align:center;color:#ffd978;margin:8mm 10mm 3mm;font-weight:700}
+.cv .sub{text-align:center;font:10.5pt "Noto Sans KR",sans-serif;color:#cfc4ff}
+.cv .brand{position:absolute;bottom:14mm;left:0;right:0;text-align:center;font-size:12pt;color:#ffd978;letter-spacing:1mm}
+/* 차례 */
+.toc h2{font-size:17pt;margin:4mm 0 2mm;text-align:center}
+.toc .lead{text-align:center;font-size:10pt;color:#8e81b8;margin-bottom:7mm}
+.toc ol{list-style:none;padding:0;margin:0;columns:1}
+.toc li{display:flex;align-items:baseline;gap:2mm;font-size:10.5pt;line-height:1.75;border-bottom:.2mm dotted #e3d6bb}
+.toc li span{color:#9a8cc6;font:8.5pt "Noto Sans KR",sans-serif;width:15mm;flex:none}
+.toc li i{font-style:normal;margin-left:auto;color:#b3a7d6;font-size:9pt}
+/* 동화 */
+.head{text-align:center;margin-bottom:6mm}
+.emo{width:24mm;height:24mm;border-radius:50%;margin:0 auto 3mm;display:flex;align-items:center;justify-content:center;font-size:13mm;background:radial-gradient(circle at 35% 30%,#fff 0%,#efe6ff 60%,#e2d5ff 100%);box-shadow:0 1mm 3mm rgba(91,63,209,.15)}
+.date{font:8.5pt "Noto Sans KR",sans-serif;color:#9a8cc6;letter-spacing:.6mm}
+.head h2{font-size:16.5pt;line-height:1.4;margin:1.5mm 0 0}
+.orn{color:#d9c48f;font-size:9pt;letter-spacing:2mm;margin-top:2mm}
+.txt p{margin:0 0 3.2mm;font-size:11.6pt;line-height:1.95;text-align:justify;word-break:keep-all}
+.txt b{color:#5b3fd1;font-weight:700}
+.first .txt p:first-child:first-letter{font-size:22pt;float:left;line-height:1;margin:1mm 1.5mm 0 0;color:#5b3fd1}
+/* 뒷표지 */
+.end .in{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.end .moon{font-size:22mm}
+.end p{font-size:14pt;color:#ffd978;margin:6mm 0 2mm}
+.end small{font:9pt "Noto Sans KR",sans-serif;color:#b9adf0}
+.tip{position:sticky;top:0;z-index:5;background:#fff6d6;font:11pt "Noto Sans KR",sans-serif;padding:10px 14px;text-align:center}
+.tip button{margin-left:8px;font:inherit;font-weight:700;border:0;border-radius:8px;padding:6px 12px;background:#5b3fd1;color:#fff;cursor:pointer}
+@media print{html,body{background:none}.page{margin:0;box-shadow:none}.tip{display:none}}
+</style>
+</head>
+<body>
+<div class="tip" id="tip">책을 만드는 중이에요…</div>
+<div id="book"></div>
+<script>
+(function(){
+var O=window.opener, book=document.getElementById('book'), tip=document.getElementById('tip');
+function fail(m){ tip.textContent=m; }
+var S, kid, icon;
+try{ S=O.BOOK.S; kid=O.BOOK.kid; icon=O.BOOK.icon||{}; }catch(e){} // member.js makeBook 이 넘겨줌
+if(!S||!kid){ return fail('밤톨 화면의 \'내 밤톨 → PDF 저장\' 버튼으로 열어 주세요.'); }
+var esc=function(s){ return String(s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+var nm=esc(kid.name), keys=Object.keys(S), liked=(kid.ints||[]).filter(function(x){ return S[x]; });
+var now=new Date(Date.now()+9*3600e3), y=now.getUTCFullYear(), m=now.getUTCMonth(), last=now.getUTCDate();
+// 매일 밤 카톡과 같은 규칙(api/me.js sendOne)으로 1일~오늘 동화 고르기
+var list=[];
+for(var d=1; d<=last; d++){
+  var day=Math.floor(Date.UTC(y,m,d)/864e5), pool=day%2&&liked.length?liked:keys, th=pool[day%pool.length];
+  list.push({d:d, th:th, t:S[th].title.replaceAll('@',nm), b:S[th].body.replaceAll('@','<b>'+nm+'</b>')});
+}
+document.title=kid.name+'의 '+(m+1)+'월 동화책 - 밤톨';
+var pageNo=0;
+function build(){ book.innerHTML=''; pageNo=0;
+function page(cls, html, numbered){
+  var p=document.createElement('section'); p.className='page '+(cls||'');
+  if(!/dark/.test(cls||'')) p.innerHTML='<div class="frame"></div>';
+  p.insertAdjacentHTML('beforeend','<div class="in">'+html+'</div>');
+  pageNo++; if(numbered) p.insertAdjacentHTML('beforeend','<div class="no">— '+pageNo+' —</div>');
+  book.appendChild(p); return p.querySelector('.in');
+}
+function stars(p){ for(var i=0;i<26;i++){ var s=document.createElement('span'); s.className='star'; s.textContent=i%5?'·':'✦'; s.style.left=(Math.random()*95)+'%'; s.style.top=(Math.random()*95)+'%'; s.style.fontSize=(i%5?10+Math.random()*8:7+Math.random()*6)+'pt'; p.appendChild(s); } }
+// 표지
+var cv=page('dark cv','<div class="mascot"></div><h1>'+nm+'의<br>'+(m+1)+'월 동화책</h1><div class="sub">'+y+'년 '+(m+1)+'월 · 매일 밤 함께 읽은 이야기 '+list.length+'편</div><div class="brand">🌙 밤톨</div>');
+stars(cv.parentNode);
+// 차례 (동화 시작 쪽수는 나중에 채움)
+var toc=page('toc','<h2>차례</h2><div class="lead">'+nm+'와 함께한 '+(m+1)+'월의 밤</div><ol>'+list.map(function(s,i){ return '<li><span>'+(m+1)+'월 '+s.d+'일</span>'+s.t+'<i id="pg'+i+'"></i></li>'; }).join('')+'</ol>', true);
+// 동화: 한 쪽에 넘치면 다음 쪽으로 (문단 → 낱말 단위로 나눔)
+list.forEach(function(s,i){
+  var paras=s.b.split(/<br\s*\/?>\s*<br\s*\/?>/), first=true, area;
+  function newPage(){
+    area=page(first?'first':'', (first?'<div class="head"><div class="emo">'+(icon[s.th]||'🌙')+'</div><div class="date">'+(m+1)+'월 '+s.d+'일의 동화</div><h2>'+s.t+'</h2><div class="orn">✦ ✦ ✦</div></div>':'')+'<div class="txt"></div>', true);
+    if(first) document.getElementById('pg'+i).textContent=pageNo;
+    first=false; return area.querySelector('.txt');
+  }
+  var txt=newPage(), over=function(){ return area.scrollHeight>area.clientHeight+1; };
+  paras.forEach(function(pt){
+    var p=document.createElement('p'); p.innerHTML=pt.trim(); txt.appendChild(p);
+    if(!over()) return;
+    // 넘침: 낱말 단위로 이 쪽에 들어가는 만큼만 남기고 나머지는 다음 쪽
+    var words=pt.trim().split(/(\s+)/), lo=0; p.innerHTML='';
+    while(words.length){
+      var keep=[]; p.innerHTML='';
+      for(var w=0; w<words.length; w++){ p.innerHTML=keep.concat(words[w]).join(''); if(over()){ break; } keep.push(words[w]); }
+      p.innerHTML=keep.join('');
+      if(!keep.length) p.remove();
+      words=words.slice(keep.length); if(!words.length) break;
+      while(words.length&&/^\s+$/.test(words[0])) words.shift();
+      txt=newPage(); p=document.createElement('p'); txt.appendChild(p);
+    }
+  });
+});
+// 뒷표지
+var end=page('dark end','<div class="moon">🌙</div><p>오늘 밤도 잘 자, '+nm+'</p><small>매일 밤 우리 아이 맞춤 동화 · bamtol.co.kr</small>');
+stars(end.parentNode);
+}
+// 글꼴이 다 받아진 뒤에 쪽 나누기 (글꼴이 바뀌면 줄 수가 달라짐) → 한 번 더 확인 후 인쇄
+build();
+document.fonts.ready.then(function(){ build(); return document.fonts.ready; }).then(function(){
+tip.innerHTML='인쇄 창에서 대상을 <b>PDF로 저장</b>으로 고르면 PDF 파일이 돼요. (총 '+pageNo+'쪽)<button onclick="print()">PDF 저장</button>';
+setTimeout(function(){ print(); },600);
+});
+})();
+</script>
+</body>
+</html>
