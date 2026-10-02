@@ -12,7 +12,7 @@ const HEAD_ADD =
   '<meta property="og:image:alt" content="밤톨 – 우리 아이 맞춤 잠자리 동화">' +
   '<meta name="twitter:image" content="' + OG + '">' +
   '<link rel="icon" type="image/png" sizes="48x48" href="/api/img?i=icon">' +
-  '<link rel="apple-touch-icon" href="/api/img?i=apple">\n';
+  '<link rel="apple-touch-icon" href="/api/img?i=apple"><link rel="manifest" href="/manifest.webmanifest"><meta name="apple-mobile-web-app-title" content="밤톨">\n'; // 홈 화면에 추가(앱처럼 쓰기)
 const HUB_LINKS = '<nav aria-label="동화 모음" style="margin-top:18px;font-size:13.5px;line-height:2">📚 동화 모음 · ' +
   [['잠자리동화', '잠자리 동화'], ['전래동화', '전래동화'], ['세계명작동화', '세계명작동화'], ['이솝우화', '이솝우화'], ['짧은동화', '짧은 동화'], ['긴동화', '긴 동화']]
     .map(([s, n]) => '<a href="/' + s + '/" style="margin-right:12px">' + n + '</a>').join('') + '</nav>';
