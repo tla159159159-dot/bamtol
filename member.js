@@ -92,9 +92,17 @@ async function dlTest(){ var j=await dlPost({test:1}); if(!j) return; toast(j.r=
 function makeBook(){
 var k=ME.kid; if(!k||!k.name){ toast('아이를 먼저 등록해 주세요'); return; }
 if(typeof STORIES==='undefined'){ toast('잠시 후 다시 해주세요'); return; }
-window.BOOK={S:STORIES, kid:k, icon:(typeof themeIcon!=='undefined'?themeIcon:{})};
+window.BOOK={S:STORIES, kid:k, icon:(typeof themeIcon!=='undefined'?themeIcon:{}), jong:bamJong(k.name)};
 if(!window.open('/book.html','_blank')) toast('팝업이 막혔어요. 팝업을 허용해 주세요');
 }
+// 받침 있는 이름(하준·지민) 조사 맞추기: 동화는 '지우는/지우야'처럼 받침 없는 이름 기준으로 쓰여 있음 → 하준이는 / 하준아
+function bamJong(n){ var c=String(n).charCodeAt(String(n).length-1); return c>=0xAC00&&c<=0xD7A3&&(c-0xAC00)%28>0; }
+function fixNames(root){ (root||document).querySelectorAll('.nm:not([data-fx])').forEach(function(s){
+s.setAttribute('data-fx','1'); if(!bamJong(s.textContent)) return;
+var t=s.nextSibling; if(t&&t.nodeType===3&&t.data.charAt(0)==='야') t.data='아'+t.data.slice(1); else s.insertAdjacentText('afterend','이');
+}); }
+if(typeof makeStory==='function'){ var _mk=makeStory; makeStory=function(){ _mk(); fixNames(); }; fixNames(); }
+if(typeof packEpisode==='function'){ var _pe=packEpisode; packEpisode=function(i){ _pe(i); fixNames(); }; }
 var recState=null;
 async function recToggle(slot,btn){
 if(recState){ recState.mr.stop(); return; }
