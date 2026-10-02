@@ -111,4 +111,6 @@ if(typeof submitReg==='function'){ var _sr=submitReg; submitReg=function(){ _sr(
 var p=new URLSearchParams(location.search).get('login');
 if(p){ history.replaceState(null,'',location.pathname+location.hash); setTimeout(function(){ toast(p==='ok'?'카카오 로그인 완료! 🌙':'로그인하지 못했어요. 다시 시도해 주세요'); },600); }
 renderMe(); meLoad();
+// 새 동화(new-stories.json, 주 3편 추가)를 동화 목록 맨 앞에 넣기
+fetch('/new-stories.json').then(function(r){ return r.ok?r.json():[]; }).then(function(a){ if(!a.length||typeof LIB==='undefined') return; a.forEach(function(x){ LIB.unshift(x); }); try{ renderFilter(); renderLenFilter(); renderFolk(); }catch(e){} }).catch(function(){});
 })();
