@@ -18,6 +18,7 @@ async function lib(host) {
   const t = await (await fetch('https://' + host + '/index.html')).text();
   const a = t.indexOf('const FOLK=['), e = t.indexOf('})();', t.indexOf('const LIB=')) + 5;
   const list = new Function(t.slice(a, e) + ';return LIB;')();
+  try { const n = await (await fetch('https://' + host + '/new-stories.json')).json(); if (Array.isArray(n)) list.push(...n); } catch (e) {} // 주 3편씩 추가되는 새 동화
   const seen = {};
   LIB = list.map(f => {
     let s = f.t.replace(/\s+/g, '');
