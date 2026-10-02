@@ -40,11 +40,12 @@ function legal(h) {
 }
 const meta = (h, attr, val) => h.replace(new RegExp('(<meta ' + attr + ' content=")[^"]*'), (_, a) => a + val);
 
-// 박혀 있던 그림 → /api/page?img= 주소로 (api/page.js imgId 와 같은 규칙). 첫 화면 밖 그림은 늦게 불러오기
+// 박혀 있던 그림 → /img/<id>.webp 정적 파일로 (저장소 img 폴더, 이름 규칙은 api/page.js imgId 와 같음). 첫 화면 밖 그림은 늦게 불러오기
+// index.html 그림을 바꾸면 img 폴더에도 새 파일을 올려야 함 (없으면 /api/page?img=<id> 로 바꿔도 동작)
 const imgId = b => b.length + '-' + b.slice(200, 216).replace(/\+/g, '-').replace(/\//g, '_');
 const ABOVE = /brand-logo|hero-clouds|hero-mascot/;
 function lighten(h) {
-  h = h.replace(/data:image\/[a-z+]+;base64,([A-Za-z0-9+/=]+)/g, (_, b) => '/api/page?img=' + imgId(b));
+  h = h.replace(/data:image\/([a-z]+)[a-z+]*;base64,([A-Za-z0-9+/=]+)/g, (_, t, b) => '/img/' + imgId(b) + '.' + t);
   return h.replace(/<img (?![^>]*loading=)([^>]*)>/g, (m, a) => (ABOVE.test(a) ? m : '<img loading="lazy" decoding="async" ' + a + '>'));
 }
 
