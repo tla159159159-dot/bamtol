@@ -50,20 +50,34 @@ function page({ path, title, desc, h1, body, ld }) {
     '.cta{background:linear-gradient(135deg,#3B2A7A,#241D45);border-radius:18px;padding:22px 20px;margin:26px 0;text-align:center}.cta b{font:700 20px "Gowun Batang",serif;display:block;margin-bottom:6px}' +
     '.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;padding:0;list-style:none}.list a{display:block;background:#221A40;border:1px solid #3A2F6B;border-radius:14px;padding:12px 14px;text-decoration:none;color:#F2EEFF;height:100%;box-sizing:border-box}' +
     '.list small{display:block;color:#ABA2CE;font-size:13px;line-height:1.5;margin-top:3px}h2{font:700 20px "Gowun Batang",serif;margin:30px 0 12px}.hubs{display:flex;flex-wrap:wrap;gap:8px}.hubs a{background:#2B2252;border-radius:999px;padding:7px 13px;text-decoration:none;font-size:14px}' +
-    'footer{color:#8D84B5;font-size:13px;margin-top:40px}body{padding-bottom:70px}.cta small{display:block;color:#ABA2CE;font-size:12.5px;margin-top:10px}' +
+    '.fam{background:#221A40;border:1px solid #3A2F6B;border-radius:18px;padding:16px 18px;margin:26px 0}.fam>b{display:block;font:700 18px "Gowun Batang",serif;margin-bottom:4px}.fam a{display:block;text-decoration:none;color:#F2EEFF;font-weight:700;padding:11px 0;border-top:1px solid #2E2552}.fam b+a{border-top:0}.fam small{display:block;color:#ABA2CE;font-size:13px;font-weight:400}' +
+    'footer{color:#8D84B5;font-size:13px;margin-top:40px;line-height:2}body{padding-bottom:70px}.cta small{display:block;color:#ABA2CE;font-size:12.5px;margin-top:10px}' +
     '.ctaf{display:flex;gap:8px;max-width:420px;margin:14px auto 0}.ctaf input{flex:1;min-width:0;border:1.5px solid #5A4AA0;background:#181328;color:#fff;border-radius:12px;padding:11px 12px;font:16px "Noto Sans KR"}.ctaf .go{border:0;cursor:pointer;white-space:nowrap}' +
     '.stick{position:fixed;left:12px;right:12px;bottom:12px;z-index:9;display:block;text-align:center;background:#AE94FF;color:#140E2C;border-radius:14px;padding:13px 10px;font-weight:700;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.35);max-width:520px;margin:0 auto}.stick b{margin-left:4px}' +
     '.fav{background:transparent;color:#F2EEFF;border:1.5px solid #5A4AA0;border-radius:12px;padding:11px 14px;font:700 15px "Noto Sans KR";cursor:pointer;margin:12px 0 0 6px}</style></head><body><div class="w">' +
     '<header><a class="logo" href="/">🌙 밤톨</a><a class="go" href="/">우리 아이 이름 동화 만들기</a></header>' +
     body +
     '<h2>동화 모음 더 보기</h2><div class="hubs">' + Object.keys(HUBS).map(k => '<a href="/' + k + '/">' + HUBS[k].h + '</a>').join('') + '</div>' +
-    '<footer>© 밤톨 · 매일 밤 우리 아이 맞춤 동화 · <a href="/">bamtol.co.kr</a></footer></div></body></html>';
+    '<footer>© 밤톨 · 매일 밤 우리 아이 맞춤 동화 · <a href="/">bamtol.co.kr</a><br>🌱 가족 사이트 · ' + [['콕콕 색칠공부', 'https://kokcolor.kr/'], ['도장쾅 학습지', 'https://www.dojangkwang.co.kr/'], ['맘먼트', 'https://mommoment.kr/']].map(([n, u]) => '<a href="' + u + UTM('footer') + '" target="_blank" rel="noopener" style="margin-right:10px">' + n + '</a>').join('') + '</footer></div></body></html>';
 }
 
 // 검색으로 들어온 사람을 회원으로: 아이 이름 넣으면 메인에서 그 이름 동화가 바로 열림 (member.js 의 ?name=)
 const CTA = h => '<form class="cta" id="cta" action="/" method="get"><b>' + h + '</b>아이 이름만 넣으면 그 아이가 주인공인 동화를 바로 만들어 드려요.' +
   '<div class="ctaf"><input name="name" maxlength="8" required placeholder="아이 이름 (예: 지우)" aria-label="아이 이름"><button class="go" type="submit">동화 만들기 →</button></div><small>무료 · 카드 없이 시작 · 매일 밤 카톡으로 받아보기</small></form>' +
   '<a class="stick" href="#cta">🌙 우리 아이가 주인공인 동화 <b>무료로 만들기 →</b></a>';
+// 밤톨 가족 사이트(같은 팀 운영): 동화 다 읽은 뒤 '내일 낮엔' 이어지는 곳. 콕콕 도안 분류는 동화 제목·내용으로 고름 (못 고르면 동물)
+const KOK = [['공룡', /공룡/, '공룡'], ['공주', /공주|왕자|왕비/, '공주'], ['동물', /토끼|호랑이|여우|곰|사자|늑대|강아지|고양이|돼지|까치|제비|원숭이|사슴/, '동물 친구들'], ['바다동물', /바다|물고기|거북|용왕|고래|인어|자라|문어/, '바다 친구들'],
+  ['곤충', /개미|베짱이|나비|꿀벌|곤충|매미|반딧불/, '곤충 친구들'], ['우주', /별님|별빛|밤하늘|우주|해님|달님/, '해님·달님·별'], ['꽃나무', /꽃|씨앗|나무(?![라랐꾼])/, '꽃과 나무']];
+const UTM = m => '?utm_source=bamtol&utm_medium=' + m;
+function family(x) {
+  const kt = KOK.find(([, r]) => r.test(x.t)); // 제목에 나오면 '동화 속 ○○', 아니면 내용으로 짐작해서 부드럽게 권하기
+  const k = kt || KOK.find(([c, r]) => c !== '우주' && (x.b.match(new RegExp(r.source, 'g')) || []).length >= 4) || ['동물', 0, '동물 친구들'];
+  const row = (u, h, s) => '<a href="' + u + '" target="_blank" rel="noopener">' + h + '<small>' + s + '</small></a>';
+  return '<div class="fam"><b>🌞 내일 낮엔 이렇게 이어가요</b>' +
+    row('https://kokcolor.kr/' + encodeURI('색칠공부/' + k[0]) + UTM('story'), (kt ? '🖍️ 동화 속 ' + k[2] + ', 색칠해 볼까요? →' : '🖍️ ' + k[2] + ' 색칠공부 해볼까요? →'), '콕콕 색칠공부 · 가입 없이 무료 도안') +
+    row('https://www.dojangkwang.co.kr/' + encodeURI('한글학습지/') + UTM('story'), '✏️ 이야기 좋아하는 아이라면 한글도 즐겁게 →', '도장쾅 학습지 · 하루 한 장, 다 풀면 도장 쾅!') +
+    row('https://mommoment.kr/' + UTM('story'), '💬 아이 재우고 엄마 시간 →', '맘먼트 · 수면교육·육아 고민 나누는 엄마 커뮤니티') + '</div>';
+}
 const card = x => '<li><a href="/' + x.s + '/">' + x.e + ' ' + esc(x.t) + '<small>' + esc(x.o) + '</small></a></li>';
 
 function storyPage(x, all) {
@@ -77,7 +91,7 @@ function storyPage(x, all) {
     '<h1>' + x.e + ' ' + esc(x.t) + '</h1><p class="one">' + esc(x.o) + '</p><div class="meta">' + cat + ' · ' + x.L + ' · 읽는 시간 약 ' + mins(x.b) + '분</div>' +
     '<button class="play" id="play">🔊 자연 음성으로 읽어주기</button><button class="fav" id="fav">♡ 찜하기</button><button class="fav" id="shr">🔗 공유하기</button>' +
     '<article class="story">' + x.b + '</article>' +
-    CTA('이 동화, 우리 아이 이름으로 들려줄까요?') +
+    CTA('이 동화, 우리 아이 이름으로 들려줄까요?') + family(x) +
     '<h2>' + cat + ' 더 읽기</h2><ul class="list">' + rel.map(card).join('') + '</ul>' +
     '<script>var T=' + JSON.stringify(text).replace(/</g, '\\u003c') + ';' +
     'function sp(t){var o=[],c="";(t.match(/[^.!?…]+[.!?…]*/g)||[]).forEach(function(s){if(c.length+s.length>480&&c){o.push(c);c="";}c+=s;});if(c)o.push(c);return o;}' +
