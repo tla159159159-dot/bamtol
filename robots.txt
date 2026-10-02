@@ -4,5 +4,7 @@ Allow: /api/img
 Allow: /api/page?img=
 Disallow: /api/
 Disallow: /voice-test.html
+Disallow: /admin.html
+Disallow: /book.html
 
 Sitemap: https://bamtol.co.kr/sitemap.xml
