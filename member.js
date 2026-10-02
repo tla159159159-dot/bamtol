@@ -42,6 +42,7 @@ if(!m){
 document.body.insertAdjacentHTML('beforeend','<div class="modal setmodal" id="meModal" hidden role="dialog" aria-modal="true" aria-label="내 밤톨" onclick="if(event.target===this)closeMe()"><div class="setpanel">'
 +'<h3 id="meTitle"></h3><p class="setdesc">아이 정보와 인사말은 카카오 계정에 저장돼서 휴대폰을 바꿔도 그대로예요.</p>'
 +'<label class="setlabel">우리 아이</label><div class="mekid"><span id="meKid"></span><button type="button" class="btn btn-ghost" onclick="closeMe();openReg()">수정</button></div>'
++'<div id="meDl"></div>'
 +'<label class="setlabel">👩 엄마·아빠 목소리 인사말</label><p class="setdesc" style="margin-top:2px">동화 시작과 끝에 내 목소리가 나와요. 각 20초까지.</p>'
 +'<div id="meRecs"></div>'
 +'<div class="setbtns"><button type="button" class="btn btn-ghost" onclick="location.href=\'/api/me?logout\'">로그아웃</button><button type="button" class="btn btn-brand" onclick="closeMe()">닫기</button></div>'
@@ -54,6 +55,11 @@ function closeMe(){ if(recState) recState.mr.stop(); var m=document.getElementBy
 function fillMe(){
 document.getElementById('meTitle').textContent='🌙 '+(ME.nick||'회원')+'님의 밤톨';
 var k=ME.kid; document.getElementById('meKid').textContent=k?(k.name+' · '+k.age+' · '+k.time):'아직 등록 전이에요';
+// 매일 밤 카톡으로 받기
+var dl=document.getElementById('meDl');
+dl.innerHTML='<div class="recrow"><div class="rectxt"><b>🌙 매일 밤 카톡으로 받기'+(ME.dl?' ✅':'')+'</b><small>'+(k?k.time+'에 오늘의 동화를 카톡으로 보내드려요':'아이를 먼저 등록해 주세요')+'</small></div><div class="recbtns"><button type="button" class="btn '+(ME.dl?'btn-ghost':'btn-brand')+'" data-act="dl">'+(ME.dl?'끄기':'켜기')+'</button>'+(ME.dl?'<button type="button" class="btn btn-ghost" data-act="test">지금 받아보기</button>':'')+'</div></div>';
+dl.querySelector('[data-act=dl]').onclick=function(){ dlSet(!ME.dl); };
+var tb=dl.querySelector('[data-act=test]'); if(tb) tb.onclick=dlTest;
 var box=document.getElementById('meRecs'); box.innerHTML='';
 ['hello','bye'].forEach(function(s){
 var has=ME.rec&&ME.rec[s];
@@ -69,6 +75,17 @@ row.querySelector('input[type=file]').onchange=function(){ if(this.files[0]) rec
 box.appendChild(row);
 });
 }
+async function dlPost(body){
+var r=await fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+var j={}; try{ j=await r.json(); }catch(e){}
+if(r.status===409&&j.need==='kid'){ toast('아이를 먼저 등록해 주세요'); closeMe(); openReg(); return null; }
+if(r.status===409&&j.need==='consent'){ toast('카카오톡 메시지 받기 동의 화면으로 이동해요'); setTimeout(function(){ location.href='/api/me?login=msg'; },900); return null; }
+if(r.status===429){ toast('1분 뒤에 다시 해주세요'); return null; }
+if(!r.ok){ toast('잠시 후 다시 해주세요'); return null; }
+return j;
+}
+async function dlSet(on){ var j=await dlPost({dl:on}); if(!j) return; ME.dl=j.dl; renderMe(); toast(on?'매일 밤 카톡으로 보내드릴게요 🌙':'카톡 받기를 껐어요'); }
+async function dlTest(){ var j=await dlPost({test:1}); if(!j) return; toast(j.r==='sent'?'카톡을 확인해 보세요 💌':'보내지 못했어요. 잠시 후 다시 해주세요'); }
 var recState=null;
 async function recToggle(slot,btn){
 if(recState){ recState.mr.stop(); return; }
@@ -109,8 +126,15 @@ document.querySelectorAll('[data-voicebtn]').forEach(function(v){ var row=v.clos
 // 아이 등록하면 로그인 상태일 때 서버에도 저장
 if(typeof submitReg==='function'){ var _sr=submitReg; submitReg=function(){ _sr(); if(ME.login){ try{ var k=JSON.parse(localStorage.getItem('bamtol_kid')||'null'); if(k) meSave({kid:k}).catch(function(){}); }catch(e){} } }; }
 var p=new URLSearchParams(location.search).get('login');
-if(p){ history.replaceState(null,'',location.pathname+location.hash); setTimeout(function(){ toast(p==='ok'?'카카오 로그인 완료! 🌙':'로그인하지 못했어요. 다시 시도해 주세요'); },600); }
-renderMe(); meLoad();
+var sp=new URLSearchParams(location.search), dlOn=sp.get('dl'), tonight=sp.get('tonight');
+if(p||tonight){ history.replaceState(null,'',location.pathname+location.hash); }
+if(p){ setTimeout(function(){ toast(p!=='ok'?'로그인하지 못했어요. 다시 시도해 주세요':dlOn?'매일 밤 카톡으로 보내드릴게요 🌙':'카카오 로그인 완료! 🌙'); },600); }
+renderMe();
+meLoad().then(function(){ // 카톡 링크로 들어오면 오늘 밤 동화 바로 열기
+if(!tonight||typeof STORIES==='undefined'||!STORIES[tonight]) return;
+theme=tonight; document.querySelectorAll('.thm[data-thm]').forEach(function(x){ x.setAttribute('aria-pressed', x.dataset.thm===tonight?'true':'false'); });
+makeStory(); go('#try');
+});
 // 새 동화(new-stories.json, 주 3편 추가)를 동화 목록 맨 앞에 넣기
 fetch('/new-stories.json').then(function(r){ return r.ok?r.json():[]; }).then(function(a){ if(!a.length||typeof LIB==='undefined') return; a.forEach(function(x){ LIB.unshift(x); }); try{ renderFilter(); renderLenFilter(); renderFolk(); }catch(e){} }).catch(function(){});
 })();
