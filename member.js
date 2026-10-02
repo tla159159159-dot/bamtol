@@ -75,10 +75,11 @@ row.querySelector('input[type=file]').onchange=function(){ if(this.files[0]) rec
 box.appendChild(row);
 });
 }
+var dlAfterReg=false; // 카톡 받기 누르다가 아이 등록으로 넘어간 경우, 등록 끝나면 이어서 켜기
 async function dlPost(body){
 var r=await fetch('/api/me',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
 var j={}; try{ j=await r.json(); }catch(e){}
-if(r.status===409&&j.need==='kid'){ toast('아이를 먼저 등록해 주세요'); closeMe(); openReg(); return null; }
+if(r.status===409&&j.need==='kid'){ toast('아이를 먼저 등록해 주세요'); dlAfterReg=true; closeMe(); openReg(); return null; }
 if(r.status===409&&j.need==='consent'){ toast('카카오톡 메시지 받기 동의 화면으로 이동해요'); setTimeout(function(){ location.href='/api/me?login=msg'; },900); return null; }
 if(r.status===429){ toast('1분 뒤에 다시 해주세요'); return null; }
 if(!r.ok){ toast('잠시 후 다시 해주세요'); return null; }
@@ -124,7 +125,7 @@ document.head.appendChild(st);
 // 목소리 고르기 줄 아래에 인사말 녹음 줄 추가
 document.querySelectorAll('[data-voicebtn]').forEach(function(v){ var row=v.closest('.voicerow'); if(row) row.insertAdjacentHTML('afterend','<div class="voicerow"><span>👩 엄마·아빠 목소리 인사말</span><button type="button" class="thm vbtn" data-greetbtn onclick="openMe()">녹음하기</button></div>'); });
 // 아이 등록하면 로그인 상태일 때 서버에도 저장
-if(typeof submitReg==='function'){ var _sr=submitReg; submitReg=function(){ _sr(); if(ME.login){ try{ var k=JSON.parse(localStorage.getItem('bamtol_kid')||'null'); if(k) meSave({kid:k}).catch(function(){}); }catch(e){} } }; }
+if(typeof submitReg==='function'){ var _sr=submitReg; submitReg=function(){ _sr(); if(ME.login){ try{ var k=JSON.parse(localStorage.getItem('bamtol_kid')||'null'); if(k) meSave({kid:k}).then(function(){ if(dlAfterReg){ dlAfterReg=false; dlSet(true); } }).catch(function(){}); }catch(e){} } }; }
 var p=new URLSearchParams(location.search).get('login');
 var sp=new URLSearchParams(location.search), dlOn=sp.get('dl'), tonight=sp.get('tonight');
 if(p||tonight){ history.replaceState(null,'',location.pathname+location.hash); }
