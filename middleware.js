@@ -75,6 +75,9 @@ function seo(h) {
   h = meta(h, 'name="twitter:description"', DESC);
   h = meta(h, 'property="og:image"', OG);
   h = h.replace('<meta property="og:locale"', () => HEAD_ADD + '<meta property="og:locale"');
+  // 구조화 데이터: 구독(디지털 서비스)을 Product 로 적으면 구글이 '판매자 목록'(배송·반품·재고 필수)으로 검사해 오류 → Service 로
+  h = h.replace('{"@type":"Product","name":"밤톨 맞춤 동화 구독"', () => '{"@type":"Service","serviceType":"어린이 맞춤 잠자리 동화 구독","image":"' + OG + '","areaServed":"KR","name":"밤톨 맞춤 동화 구독"')
+    .replace('"brand":{"@type":"Brand","name":"밤톨"}', () => '"provider":{"@type":"Organization","name":"밤톨","url":"' + SITE + '/","logo":"' + SITE + '/icon-512.png"}');
   h = legal(h);
   h = lighten(h);
   h = h.replace(/<section class="sec" style="padding-top:0"><div class="wrap">\s*<style>@media\(max-width:560px\)\{\.sp-card/, m => FAMILY + m); // 안심 섹션 뒤, 광고 카드 앞
