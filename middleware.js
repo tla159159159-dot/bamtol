@@ -64,6 +64,16 @@ const FAMILY = '<section class="sec" id="family" style="padding-top:0"><div clas
 const FAM_FOOT = '<nav aria-label="가족 사이트" style="margin-top:6px;font-size:13.5px;line-height:2">🌱 가족 사이트 · ' +
   FAM.map(([, n, , u]) => '<a href="' + famUrl(u, 'footer') + '" target="_blank" rel="noopener" style="margin-right:12px;color:var(--ink-soft)">' + n + '</a>').join('') + '</nav>';
 
+// 첫 화면 가볍게: 동화 도서관 130여 편 본문(페이지의 약 85%)을 빼고 보냄 → 동화를 열 때 member.js 가 /api/page?bodies 로 받아옴
+// 읽는 시간(분)은 미리 계산해서 m 으로 남김 (ftMin 과 같은 계산). 모양이 예상과 다르면 손대지 않음
+function slim(h) {
+  const a = h.search(/(?:var|const|let)\s+FOLK\s*=\s*\[/), e = h.indexOf('var _F=FOLK.map');
+  const fm = 'function ftMin(f){ var n=(f.b||\'\')';
+  if (a < 0 || e < a || !h.includes(fm)) return h;
+  const mid = h.slice(a, e).replace(/b:`([^`]*)`/g, (_, b) => 'm:' + Math.max(2, Math.round(b.replace(/<br\s*\/?>/g, '').replace(/\s/g, '').length / 150)));
+  return (h.slice(0, a) + mid + h.slice(e)).replace(fm, 'function ftMin(f){ if(!f.b&&f.m) return f.m; var n=(f.b||\'\')');
+}
+
 function seo(h) {
   h = h.replaceAll('{도메인}', 'bamtol.co.kr').replaceAll('100여 편', '130여 편');
   h = h.replace(/<link rel="icon" href="data:[^"]*">/, '');
@@ -80,6 +90,7 @@ function seo(h) {
     .replace('"brand":{"@type":"Brand","name":"밤톨"}', () => '"provider":{"@type":"Organization","name":"밤톨","url":"' + SITE + '/","logo":"' + SITE + '/icon-512.png"}');
   h = legal(h);
   h = lighten(h);
+  h = slim(h);
   h = h.replace(/<section class="sec" style="padding-top:0"><div class="wrap">\s*<style>@media\(max-width:560px\)\{\.sp-card/, m => FAMILY + m); // 안심 섹션 뒤, 광고 카드 앞
   return h.replace('</footer>', () => HUB_LINKS + FAM_FOOT + '</footer>'); // 동화 모음 페이지로 가는 길 (검색로봇이 따라감)
 }

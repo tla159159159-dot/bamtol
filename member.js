@@ -255,6 +255,39 @@ makeStory(); go('#try');
 // PLUS 결제(나이스페이) 열기 전: 'PLUS 시작하기'가 결제 없이 가짜 '구독중' 화면을 띄우지 않게, 지금 무료로 되는 매일 밤 카톡·동화책으로 안내
 // 결제 붙일 때 이 줄을 결제창 열기로 바꾸기
 if(typeof openMember==='function') openMember=function(){ if(ME.login){ toast('결제가 열리기 전까지 PLUS 전 기능이 무료예요 · 아이 여러 명·생일 동화·동화책 PDF까지 써보세요 🌙'); openMe(); return; } toast('결제가 열리기 전까지 PLUS 무료 체험 중 · 카카오 로그인만 하면 매일 밤 카톡 동화가 와요 🌙'); setTimeout(function(){ location.href='/api/me?login=msg'; },1600); };
+// 동화 도서관 본문은 첫 화면을 가볍게 하려고 따로 받음 (middleware.js slim). 도서관 근처로 내려오거나 동화를 처음 열 때 한 번만
+var BODIES=null;
+function loadBodies(){ if(!BODIES) BODIES=fetch('/api/page?bodies').then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(o){ if(typeof LIB!=='undefined') LIB.forEach(function(f){ if(!f.b&&o[f.t+'|'+(f.L||'단편')]) f.b=o[f.t+'|'+(f.L||'단편')]; }); return o; }).catch(function(e){ BODIES=null; throw e; }); return BODIES; }
+if(typeof openFolk==='function'){ var _ofb=openFolk; openFolk=function(i){ if(typeof LIB==='undefined'||!LIB[i]||LIB[i].b) return _ofb(i);
+var bd=document.getElementById('ftBody'); _ofb(i); if(bd) bd.innerHTML='<p style="text-align:center;opacity:.7">동화를 불러오는 중이에요… 🌙</p>';
+loadBodies().then(function(){ var m=document.getElementById('ftModal'); if(m&&!m.hidden&&curFolkIdx===i) _ofb(i); }).catch(function(){ if(bd) bd.innerHTML='<p style="text-align:center">불러오지 못했어요. 잠시 후 다시 열어 주세요.</p>'; }); }; }
+(function(){ var f=document.getElementById('folk'); if(!f||!('IntersectionObserver' in window)) return; var io=new IntersectionObserver(function(es){ if(es.some(function(e){ return e.isIntersecting; })){ io.disconnect(); loadBodies().catch(function(){}); } },{rootMargin:'600px'}); io.observe(f); })();
+// 테마 동화팩: 결제가 열리기 전까지 전 편 무료로 읽기 (₩2,900 '받기'가 아이 등록창만 열리던 것 정리). 결제 붙이면 PACK_FREE=false
+var PACK_FREE=true;
+if(PACK_FREE&&typeof renderPackList==='function'){
+var _rpl=renderPackList; renderPackList=function(){ _rpl(); var v=document.getElementById('packView'); if(!v) return;
+v.querySelectorAll('.pkep-lock').forEach(function(b,i){ b.classList.remove('pkep-lock'); b.setAttribute('onclick','packEpisode('+(i+1)+')'); b.innerHTML=b.innerHTML.replace('🔒 ','').replace('잠김','읽기 →'); });
+var nm=packName(); v.querySelectorAll('.pkep span').forEach(function(x){ if(x.innerHTML.indexOf('@')>=0) x.innerHTML=x.innerHTML.split('@').join(nm); }); // 제목 속 @ 를 아이 이름으로
+var s=v.querySelector('.pkbuy span'); if(s) s.textContent='결제가 열리기 전까지 전체 '+PACKS[curPack].stories.length+'편 무료로 읽어요'; var bb=v.querySelector('.pkbuy .btn'); if(bb) bb.remove(); };
+packLocked=function(){ renderPackList(); };
+var _pe2=packEpisode; packEpisode=function(i){ _pe2(i); var m=document.querySelector('#packView .pkmore'); if(!m) return; var n=PACKS[curPack].stories.length;
+m.innerHTML=i+1<n?'<span>다음 이야기도 읽어볼까요?</span><button class="btn btn-brand" onclick="packEpisode('+(i+1)+')">'+(i+2)+'화 읽기 →</button>':'<span>마지막 이야기예요 🌙</span><button class="btn btn-ghost" onclick="renderPackList()">목록으로</button>'; };
+var fixGrid=function(){ document.querySelectorAll('.pprice').forEach(function(e){ if(e.dataset.fx) return; e.dataset.fx=1; e.innerHTML='무료 <s style="opacity:.55;font-weight:400">'+e.textContent+'</s>'; });
+document.querySelectorAll('.pmeta+.btn,.pmeta~.btn').forEach(function(b){ b.removeAttribute('onclick'); b.textContent='읽어보기'; }); };
+fixGrid(); if(typeof renderPackGrid==='function'){ var _rpg=renderPackGrid; renderPackGrid=function(){ _rpg(); fixGrid(); }; }
+document.querySelectorAll('.year-note').forEach(function(e){ if(/2,900/.test(e.textContent)) e.innerHTML='테마 동화팩도 결제가 열리기 전까지 <b>모든 편 무료</b>로 읽을 수 있어요.'; });
+}
+// 홈 화면에 추가 안내: 아이폰·아이패드는 자동 안내가 없어서 한 번만 알려줌, 안드로이드는 설치 창 띄우기. ✕ 누르면 다시 안 뜸
+(function(){
+var get=function(){ try{ return localStorage.getItem('bamtol_a2hs'); }catch(e){ return '1'; } }, set=function(){ try{ localStorage.setItem('bamtol_a2hs','1'); }catch(e){} };
+if(get()||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone) return;
+var ios=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1), dp=null;
+var show=function(msg,btn){ if(document.getElementById('a2hs')) return; document.body.insertAdjacentHTML('beforeend','<div id="a2hs" role="dialog" aria-label="홈 화면에 추가" style="position:fixed;left:12px;right:12px;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:9998;max-width:440px;margin:0 auto;background:var(--surface,#241D45);color:var(--ink,#F8F5FF);border:1px solid var(--line-strong,#483C7C);border-radius:16px;padding:14px 44px 14px 16px;box-shadow:0 12px 30px rgba(0,0,0,.35);font-size:14.5px;line-height:1.6"><b>🌙 매일 밤 한 번에 열려요</b><br>'+msg+(btn?'<br><button type="button" id="a2hsGo" class="btn btn-brand" style="margin-top:8px;padding:8px 14px">홈 화면에 추가</button>':'')+'<button type="button" id="a2hsX" aria-label="닫기" style="position:absolute;right:8px;top:8px;width:34px;height:34px;border:0;background:none;color:inherit;font-size:18px;cursor:pointer">✕</button></div>');
+document.getElementById('a2hsX').onclick=function(){ set(); document.getElementById('a2hs').remove(); };
+var g=document.getElementById('a2hsGo'); if(g) g.onclick=function(){ set(); document.getElementById('a2hs').remove(); if(dp){ dp.prompt(); dp=null; } }; };
+window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); dp=e; setTimeout(function(){ show('밤톨을 홈 화면에 앱처럼 추가해 두세요.',true); },25000); });
+if(ios&&/Safari/.test(navigator.userAgent)&&!/CriOS|FxiOS|KAKAOTALK|NAVER|Instagram/.test(navigator.userAgent)) setTimeout(function(){ show('아래 <b>공유 버튼(□↑)</b> → <b>\'홈 화면에 추가\'</b>를 누르면 앱처럼 바로 열 수 있어요.'); },25000);
+})();
 // 새 동화(new-stories.json, 주 3편 추가)를 동화 목록 맨 앞에 넣기
 fetch('/new-stories.json').then(function(r){ return r.ok?r.json():[]; }).then(function(a){ if(!a.length||typeof LIB==='undefined') return; a.forEach(function(x){ LIB.unshift(x); }); try{ renderFilter(); renderLenFilter(); renderFolk(); }catch(e){} }).catch(function(){});
 })();
