@@ -4,7 +4,9 @@
 // POST {fav:'제목|단편', on:true|false} 찜 / {recent:'제목|단편'} 최근 읽은 동화
 // DELETE ?all : 회원 탈퇴 (내 정보·녹음·카톡 토큰 전부 삭제 + 카카오 연결 끊기)
 // GET ?view=제목|단편 : 동화 조회수 +1 (누구나) / GET ?stats : 운영 현황 (관리자만, 처음 연 사람이 관리자)
-// GET ?deliver : 매일 밤 카톡 배달 (GitHub Actions가 19~24시 10분마다 부름, 여러 번 불려도 하루 1번만 보냄)
+// GET ?deliver : 매일 밤 카톡 배달 (GitHub Actions가 19~24시 10분마다 부름, 여러 번 불려도 아이마다 하루 1번만 보냄)
+// PLUS: 아이 여러 명(kids, 최대 4명) · 매일 배달 · 생일·명절 특별 동화 / FREE: 아이 1명 · 토요일에만 배달
+// POST {kid, idx} 아이 수정(idx 없으면 첫째) · idx=kids.length 면 추가 / {delKid: idx} 아이 삭제
 const crypto = require('crypto');
 const KEY = process.env.KAKAO_REST_KEY;
 const SECRET = process.env.KAKAO_SECRET; // 카카오에서 클라이언트 시크릿을 켰을 때만 필요
@@ -13,6 +15,13 @@ const RURL = process.env.KV_REST_API_URL;
 const REDIRECT = 'https://bamtol.co.kr/api/me';
 const SLOTS = ['hello', 'bye'];
 const MAX_AUDIO = 600000; // 원본 600KB (약 20초)
+const OPEN_BETA = process.env.BAMTOL_BETA !== '0'; // 결제(나이스페이) 열기 전까지 모든 회원 PLUS 무료 체험. 결제 열면 Vercel 환경변수 BAMTOL_BETA=0
+const MAX_KIDS = 4;
+const kst = () => new Date(Date.now() + 9 * 3600e3);
+const today = () => kst().toISOString().slice(0, 10);
+const isPlus = p => OPEN_BETA || !!(p.plus && p.plus >= today()); // p.plus = 'YYYY-MM-DD' 이용 마지막 날 (결제 승인 때 기록)
+const kidsOf = p => (p.kids && p.kids.length ? p.kids : p.kid ? [p.kid] : []);
+function setKids(p, a) { p.kids = a.slice(0, MAX_KIDS); p.kid = p.kids[0] || null; if (!p.kid) { p.dl = false; } }
 
 async function redis(cmd) {
   const r = await fetch(RURL, { method: 'POST', headers: { Authorization: 'Bearer ' + SIGN, 'Content-Type': 'application/json' }, body: JSON.stringify(cmd) });
@@ -37,7 +46,8 @@ function cleanKid(k) {
   if (!k || typeof k !== 'object') return null;
   const name = str(k.name, 8).trim();
   if (!name) return null;
-  return { name, age: str(k.age, 6), time: str(k.time, 12), ints: (Array.isArray(k.ints) ? k.ints : []).slice(0, 6).map(x => str(x, 10)) };
+  const bd = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(String(k.bd)) ? String(k.bd) : ''; // 생일 월-일만 (연도는 안 받음)
+  return { name, age: str(k.age, 6), time: str(k.time, 12), ints: (Array.isArray(k.ints) ? k.ints : []).slice(0, 6).map(x => str(x, 10)), bd };
 }
 async function getProfile(id) { const p = await redis(['GET', 'bt:u:' + id]); return p ? JSON.parse(p) : { r: {} }; }
 const putProfile = (id, p) => redis(['SET', 'bt:u:' + id, JSON.stringify(p)]);
@@ -48,14 +58,24 @@ async function stories() {
   if (ST) return ST;
   const t = await (await fetch('https://bamtol.co.kr/index.html')).text();
   const a = t.indexOf('const STORIES='), e = t.indexOf('};', a) + 2;
-  return (ST = new Function(t.slice(a, e) + ';return STORIES;')());
+  ST = new Function(t.slice(a, e) + ';return STORIES;')();
+  try { SP = await (await fetch('https://bamtol.co.kr/special-stories.json')).json(); } catch (e) { SP = {}; }
+  return ST;
 }
-const kst = () => new Date(Date.now() + 9 * 3600e3);
+let SP = {}; // 특별한 날 동화 (special-stories.json): 생일·설날·추석·어린이날·크리스마스
+// 명절 날짜 (KST). ponytail: 설·추석은 음력이라 해마다 직접 추가 (2029년 이후 추가 필요)
+const HOLI = { '01-01': '설날', '05-05': '어린이날', '12-24': '크리스마스', '2027-02-07': '설날', '2027-09-15': '추석', '2028-01-27': '설날', '2028-10-03': '추석', '2029-02-13': '설날', '2029-09-22': '추석' };
+function special(kid, date) { // 오늘 이 아이에게 보낼 특별 동화 키 (없으면 '')
+  const md = date.slice(5);
+  if (kid.bd && kid.bd === md && SP['생일']) return '생일';
+  const h = HOLI[date] || (HOLI[md] !== '설날' ? HOLI[md] : ''); // 양력 1월 1일은 설날 동화 안 씀
+  return h && SP[h] ? h : '';
+}
 function bedtime(s) { // '저녁 8시 30분' → 1230(분)
   const h = +((/(\d+)\s*시/.exec(s) || [])[1] || 8), m = +((/(\d+)\s*분/.exec(s) || [])[1] || 0);
   return (h < 12 ? h + 12 : h) * 60 + m;
 }
-async function sendOne(id, p) {
+async function sendOne(id, p, ki = 0) { // ki = 몇 번째 아이
   const tk = JSON.parse((await redis(['GET', 'bt:tk:' + id])) || 'null');
   if (!tk) return 'notoken';
   const form = { grant_type: 'refresh_token', client_id: KEY, refresh_token: tk.rt };
@@ -63,10 +83,14 @@ async function sendOne(id, p) {
   const t = await fetch('https://kauth.kakao.com/oauth/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' }, body: new URLSearchParams(form) }).then(r => r.json());
   if (!t.access_token) { p.dl = false; await putProfile(id, p); await redis(['SREM', 'bt:dl', id]); return 'expired'; } // 두 달 넘게 안 들어와 토큰 만료 → 끔
   if (t.refresh_token) await redis(['SET', 'bt:tk:' + id, JSON.stringify({ rt: t.refresh_token })]);
-  const S = await stories(), keys = Object.keys(S), liked = (p.kid.ints || []).filter(x => S[x]);
-  const day = Math.floor(kst().getTime() / 864e5), pool = day % 2 && liked.length ? liked : keys; // 하루는 좋아하는 테마, 하루는 전체에서
-  const th = pool[day % pool.length], url = 'https://bamtol.co.kr/?tonight=' + encodeURIComponent(th);
-  const tpl = { object_type: 'text', text: '🌙 ' + p.kid.name + '의 오늘 밤 동화가 도착했어요\n\n「' + S[th].title.replaceAll('@', p.kid.name) + '」\n\n불 끄고 같이 들어볼까요?', link: { web_url: url, mobile_web_url: url }, button_title: '동화 듣기' };
+  const kid = kidsOf(p)[ki] || kidsOf(p)[0];
+  const S = await stories(), keys = Object.keys(S), liked = (kid.ints || []).filter(x => S[x]);
+  const day = Math.floor(kst().getTime() / 864e5) + ki, pool = day % 2 && liked.length ? liked : keys; // 하루는 좋아하는 테마, 하루는 전체에서 (아이마다 다르게)
+  const sp = isPlus(p) ? special(kid, today()) : '';
+  const th = sp || pool[day % pool.length], title = (sp ? SP[sp] : S[th]).title;
+  const url = 'https://bamtol.co.kr/?tonight=' + encodeURIComponent(th) + (ki ? '&k=' + ki : '');
+  const head = sp === '생일' ? '🎂 ' + kid.name + '의 생일 밤 특별 동화가 도착했어요' : sp ? '🎁 오늘은 ' + sp + '! ' + kid.name + '의 특별한 밤 동화가 도착했어요' : '🌙 ' + kid.name + '의 오늘 밤 동화가 도착했어요';
+  const tpl = { object_type: 'text', text: head + '\n\n「' + title.replaceAll('@', kid.name) + '」\n\n불 끄고 같이 들어볼까요?', link: { web_url: url, mobile_web_url: url }, button_title: '동화 듣기' };
   const r = await fetch('https://kapi.kakao.com/v2/api/talk/memo/default/send', { method: 'POST', headers: { Authorization: 'Bearer ' + t.access_token, 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' }, body: new URLSearchParams({ template_object: JSON.stringify(tpl) }) }).then(r => r.json());
   return r.result_code === 0 ? 'sent' : 'fail:' + (r.code || '');
 }
@@ -82,7 +106,7 @@ async function stats(id) {
   const pairs = a => { const o = {}; for (let i = 0; i < (a || []).length; i += 2) o[a[i]] = +a[i + 1]; return o; };
   const joins = pairs(await redis(['HGETALL', 'bt:joins'])), views = pairs(await redis(['HGETALL', 'bt:views']));
   return {
-    members: ids.length, kids: ps.filter(p => p.kid).length, recs: ps.filter(p => p.r && Object.keys(p.r).length).length,
+    members: ids.length, kids: ps.reduce((n, p) => n + kidsOf(p).length, 0), plus: ps.filter(p => p.plus && p.plus >= today()).length, recs: ps.filter(p => p.r && Object.keys(p.r).length).length,
     dl: +(await redis(['SCARD', 'bt:dl'])) || 0, favs: ps.reduce((n, p) => n + (p.fav || []).length, 0),
     joins: Object.keys(joins).sort().slice(-30).map(d => [d, joins[d]]),
     top: Object.keys(views).sort((a, b) => views[b] - views[a]).slice(0, 15).map(k => [k, views[k]]),
@@ -96,15 +120,23 @@ async function deliver() { // ponytail: 회원을 한 명씩 차례로 처리, �
     try {
       const p = JSON.parse((await redis(['GET', 'bt:u:' + id])) || '{}');
       if (!p.dl || !p.kid) continue;
-      const t = bedtime(p.kid.time);
-      if (m < t - 10 || m > t + 120) continue; // 받을 시간 10분 전 ~ 2시간 뒤
-      if ((await redis(['SET', 'bt:sent:' + id + ':' + date, '1', 'NX', 'EX', 172800])) !== 'OK') continue; // 오늘 이미 보냄
-      const r = await sendOne(id, p);
-      out[r] = (out[r] || 0) + 1;
+      const plus = isPlus(p);
+      if (!plus && now.getUTCDay() !== 6) continue; // FREE 는 토요일에만 (주 1편)
+      const ks = plus ? kidsOf(p) : kidsOf(p).slice(0, 1);
+      for (let ki = 0; ki < ks.length; ki++) {
+        const t = bedtime(ks[ki].time);
+        if (m < t - 10 || m > t + 120) continue; // 받을 시간 10분 전 ~ 2시간 뒤
+        if ((await redis(['SET', 'bt:sent:' + id + ':' + date + (ki ? ':' + ki : ''), '1', 'NX', 'EX', 172800])) !== 'OK') continue; // 오늘 이미 보냄
+        const r = await sendOne(id, p, ki);
+        out[r] = (out[r] || 0) + 1;
+        if (r === 'expired' || r === 'notoken') break;
+      }
     } catch (e) { out.error = (out.error || 0) + 1; }
   }
   return { checked: ids.length, ...out };
 }
+
+const view = (me, p) => ({ login: true, nick: me.n, kid: p.kid || null, kids: kidsOf(p), rec: p.r || {}, dl: !!p.dl, fav: p.fav || [], recent: p.recent || [], plus: isPlus(p), beta: OPEN_BETA, plusUntil: p.plus || null });
 
 module.exports = async (req, res) => {
   const q = req.query || {};
@@ -165,7 +197,7 @@ module.exports = async (req, res) => {
     }
     if (req.method === 'GET') {
       const p = await getProfile(me.id);
-      return res.status(200).json({ login: true, nick: me.n, kid: p.kid || null, rec: p.r || {}, dl: !!p.dl, fav: p.fav || [], recent: p.recent || [] });
+      return res.status(200).json(view(me, p));
     }
     // 쓰기는 우리 사이트에서 온 요청만
     const origin = req.headers.origin || '';
@@ -197,9 +229,16 @@ module.exports = async (req, res) => {
     if (req.method === 'POST') {
       const b = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
       if (b.kid !== undefined) {
-        const kid = cleanKid(b.kid);
-        if (!kid) return res.status(400).end();
-        p.kid = kid;
+        const kid = cleanKid(b.kid), ks = kidsOf(p), i = b.idx === undefined ? 0 : Math.floor(+b.idx);
+        if (!kid || !(i >= 0 && i <= ks.length && i < MAX_KIDS)) return res.status(400).end();
+        if (i >= 1 && i === ks.length && !isPlus(p)) return res.status(402).json({ need: 'plus' }); // 둘째부터는 PLUS
+        ks[i] = kid; setKids(p, ks);
+      }
+      if (b.delKid !== undefined) {
+        const ks = kidsOf(p), i = Math.floor(+b.delKid);
+        if (!(i >= 0 && i < ks.length)) return res.status(400).end();
+        ks.splice(i, 1); setKids(p, ks);
+        if (!p.dl) await redis(['SREM', 'bt:dl', me.id]);
       }
       if (b.fav !== undefined || b.recent !== undefined) { // 동화 키 = 제목|단편/장편
         const key = str(b.fav !== undefined ? b.fav : b.recent, 60);
@@ -224,7 +263,7 @@ module.exports = async (req, res) => {
         p.r[b.rec] = Date.now();
       }
       await putProfile(me.id, p);
-      return res.status(200).json({ ok: true, kid: p.kid || null, rec: p.r, dl: !!p.dl, fav: p.fav || [], recent: p.recent || [] });
+      return res.status(200).json({ ok: true, ...view(me, p) });
     }
     return res.status(405).end();
   } catch (e) { return res.status(500).end(); }
