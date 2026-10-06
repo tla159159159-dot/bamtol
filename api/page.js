@@ -66,8 +66,8 @@ const CTA = h => '<form class="cta" id="cta" action="/" method="get"><b>' + h + 
   '<div class="ctaf"><input name="name" maxlength="8" required placeholder="아이 이름 (예: 지우)" aria-label="아이 이름"><button class="go" type="submit">동화 만들기 →</button></div><small>무료 · 카드 없이 시작 · 매일 밤 카톡으로 받아보기</small></form>' +
   '<a class="stick" href="#cta">🌙 우리 아이가 주인공인 동화 <b>무료로 만들기 →</b></a>';
 // 밤톨 가족 사이트(같은 팀 운영): 동화 다 읽은 뒤 '내일 낮엔' 이어지는 곳. 콕콕 도안 분류는 동화 제목·내용으로 고름 (못 고르면 동물)
-const KOK = [['공룡', /공룡/, '공룡'], ['공주', /공주|왕자|왕비|신데렐라|백설/, '공주'], ['크리스마스', /산타|크리스마스|루돌프|눈사람/, '크리스마스 친구들'], ['할로윈', /할로윈|유령|마녀/, '할로윈 친구들'], ['생일파티', /생일|케이크/, '생일 파티'], ['탈것', /기차|자동차|버스|비행기|소방차|트럭|자전거/, '탈것'], ['악기', /피리|악기|바이올린|피아노|나팔|북소리/, '악기'], ['농장동물', /젖소|송아지|병아리|암탉|돼지|염소|농장/, '농장 동물'], ['동물', /토끼|호랑이|여우|곰|사자|늑대|강아지|고양이|까치|제비|원숭이|사슴/, '동물 친구들'], ['바다동물', /바다|물고기|거북|용왕|고래|인어|자라|문어/, '바다 친구들'],
-  ['곤충', /개미|베짱이|나비|꿀벌|곤충|매미|반딧불/, '곤충 친구들'], ['우주', /별님|별빛|밤하늘|우주|해님|달님/, '해님·달님·별'], ['과일채소', /사과|수박|딸기|당근|포도|호박|감나무/, '과일·채소'], ['꽃나무', /꽃|씨앗|나무(?![라랐꾼])/, '꽃과 나무']];
+const KOK = [['공룡', /공룡/, '공룡'], ['공주', /공주|왕자|왕비/, '공주'], ['동물', /토끼|호랑이|여우|곰|사자|늑대|강아지|고양이|돼지|까치|제비|원숭이|사슴/, '동물 친구들'], ['바다동물', /바다|물고기|거북|용왕|고래|인어|자라|문어/, '바다 친구들'],
+  ['곤충', /개미|베짱이|나비|꿀벌|곤충|매미|반딧불/, '곤충 친구들'], ['우주', /별님|별빛|밤하늘|우주|해님|달님/, '해님·달님·별'], ['꽃나무', /꽃|씨앗|나무(?![라랐꾼])/, '꽃과 나무']];
 const UTM = m => '?utm_source=bamtol&utm_medium=' + m;
 function family(x) {
   const kt = KOK.find(([, r]) => r.test(x.t)); // 제목에 나오면 '동화 속 ○○', 아니면 내용으로 짐작해서 부드럽게 권하기
@@ -172,13 +172,24 @@ module.exports = async (req, res) => {
       return res.status(200).send(x);
     } catch (e) { return res.status(500).end(); }
   }
+  if (q.bodies !== undefined) { // 메인 화면 동화 도서관 본문 (메인은 첫 화면을 가볍게 하려고 본문을 빼고 보냄 → 동화를 열 때 이걸 한 번 받아옴)
+    try {
+      const o = {}; for (const x of await lib(req.headers.host || 'bamtol.co.kr')) o[x.t + '|' + x.L] = x.b;
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800');
+      return res.status(200).send(JSON.stringify(o));
+    } catch (e) { return res.status(500).end(); }
+  }
   if (q.ns) return res.redirect(308, '/' + encodeURIComponent(s) + '/'); // 끝에 / 붙인 주소 하나로 통일
   try {
     const all = await lib(req.headers.host || 'bamtol.co.kr');
     const x = all.find(y => y.s === s);
     const html = HUBS[s] ? hubPage(s, all) : x ? storyPage(x, all) : null;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    if (!html) return res.status(404).send(page({ path: '/', title: '페이지를 찾을 수 없어요 | 밤톨', desc: '밤톨', body: '<h1>페이지를 찾을 수 없어요</h1><p><a href="/">밤톨 처음으로 →</a></p>', ld: {} }));
+    if (!html) return res.status(404).send(page({ path: '/', title: '페이지를 찾을 수 없어요 | 밤톨', desc: '밤톨', ld: {}, // 없는 주소: 많이 찾는 동화·이름 동화 만들기로 이어주기
+      body: '<h1>🌙 찾으시는 페이지가 없어요</h1><p class="one">주소가 바뀌었거나 없는 동화예요. 대신 이런 동화는 어때요?</p>' +
+        '<ul class="list">' + all.slice(0, 6).map(card).join('') + '</ul>' + CTA('우리 아이 이름으로 동화를 만들어 볼까요?') +
+        '<p style="margin-top:18px"><a href="/">밤톨 처음으로 →</a></p>' }));
     res.setHeader('Cache-Control', 'public, max-age=600, s-maxage=86400, stale-while-revalidate=604800');
     return res.status(200).send(html);
   } catch (e) { return res.status(500).end(); }
