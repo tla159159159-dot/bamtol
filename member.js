@@ -260,7 +260,7 @@ var BODIES=null;
 function loadBodies(){ if(!BODIES) BODIES=fetch('/api/page?bodies').then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(o){ if(typeof LIB!=='undefined') LIB.forEach(function(f){ if(!f.b&&o[f.t+'|'+(f.L||'단편')]) f.b=o[f.t+'|'+(f.L||'단편')]; }); return o; }).catch(function(e){ BODIES=null; throw e; }); return BODIES; }
 if(typeof openFolk==='function'){ var _ofb=openFolk; openFolk=function(i){ if(typeof LIB==='undefined'||!LIB[i]||LIB[i].b) return _ofb(i);
 var bd=document.getElementById('ftBody'); _ofb(i); if(bd) bd.innerHTML='<p style="text-align:center;opacity:.7">동화를 불러오는 중이에요… 🌙</p>';
-loadBodies().then(function(){ var m=document.getElementById('ftModal'); if(m&&!m.hidden&&curFolkIdx===i) _ofb(i); }).catch(function(){ if(bd) bd.innerHTML='<p style="text-align:center">불러오지 못했어요. 잠시 후 다시 열어 주세요.</p>'; }); }; }
+loadBodies().then(function(){ var m=document.getElementById('ftModal'); if(m&&!m.hidden&&curFolkIdx===i){ _ofb(i); if(window.gateFolk) gateFolk(i); } }).catch(function(){ if(bd) bd.innerHTML='<p style="text-align:center">불러오지 못했어요. 잠시 후 다시 열어 주세요.</p>'; }); }; }
 (function(){ var f=document.getElementById('folk'); if(!f||!('IntersectionObserver' in window)) return; var io=new IntersectionObserver(function(es){ if(es.some(function(e){ return e.isIntersecting; })){ io.disconnect(); loadBodies().catch(function(){}); } },{rootMargin:'600px'}); io.observe(f); })();
 // 테마 동화팩: 1화는 누구나 무료 샘플, 나머지는 PLUS(지금은 카카오 로그인하면 무료 체험)에서 열림
 var packOpen=function(){ return !!(ME.login&&ME.plus); };
@@ -312,3 +312,22 @@ if(ios&&/Safari/.test(navigator.userAgent)&&!/CriOS|FxiOS|KAKAOTALK|NAVER|Instag
 // 새 동화(new-stories.json, 주 3편 추가)를 동화 목록 맨 앞에 넣기
 fetch('/new-stories.json').then(function(r){ return r.ok?r.json():[]; }).then(function(a){ if(!a.length||typeof LIB==='undefined') return; a.forEach(function(x){ LIB.unshift(x); }); try{ renderFilter(); renderLenFilter(); renderFolk(); }catch(e){} }).catch(function(){});
 })();
+
+// 일반동화·이름 동화 무료 체험: 무료 동화 10편·이름 동화 3테마는 끝까지, 나머지는 앞부분만 보고 PLUS(지금은 카카오 로그인하면 PLUS 무료 체험)
+// ponytail: 무료 목록은 api/page.js FREE 와 같게 유지. 본문은 화면에서만 가림(검색 노출용으로 HTML엔 남김)
+var FREE_T=['흥부와 놀부','토끼와 거북이','해님 달님','콩쥐팥쥐','금도끼 은도끼','아기돼지 삼형제','개미와 베짱이','양치기 소년','신데렐라','백설공주'];
+var FREE_THM=['숲','바다','우주'];
+var gOpen=function(){ return !!(typeof ME!=='undefined'&&ME&&ME.login&&ME.plus); };
+var gCut=function(h){ var p=String(h).split(/(?:<br\s*\/?>\s*){2,}|\n\n/); return p.slice(0,Math.max(2,Math.ceil(p.length*.3))).join('<br><br>'); };
+var gBox=function(what){ return '<div class="glock"><div class="glock-ic">🔒</div><b>뒷이야기는 PLUS에서 이어져요</b><p>'+what+'<br>지금은 카카오 로그인만 하면 PLUS를 무료로 체험할 수 있어요.</p><button type="button" class="btn btn-brand" onclick="'+(typeof ME!=='undefined'&&ME&&ME.login?"closeFolk&&closeFolk();go('#price')":'kakaoLogin()')+'">'+(typeof ME!=='undefined'&&ME&&ME.login?'PLUS 알아보기':'카카오 로그인하고 끝까지 읽기')+'</button></div>'; };
+window.gateFolk=function(i){ var f=typeof LIB!=='undefined'&&LIB[i]; if(!f||!f.b||gOpen()||FREE_T.indexOf(f.t)>=0) return;
+var bd=document.getElementById('ftBody'); if(!bd) return; var c=gCut(f.b); bd.innerHTML=c+'…'+gBox('무료 동화 '+FREE_T.length+'편은 끝까지 읽을 수 있어요.');
+curFolkText=c.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(); };
+if(typeof openFolk==='function'){ var _ofg=openFolk; openFolk=function(i){ _ofg(i); gateFolk(i); }; }
+var gStory=function(){ var t=document.getElementById('storyText'), old=document.getElementById('gStoryLock'); if(old) old.remove(); if(!t||gOpen()||FREE_THM.indexOf(theme)>=0) return;
+t.innerHTML=gCut(t.innerHTML)+'…'; t.insertAdjacentHTML('afterend','<div id="gStoryLock">'+gBox('숲·바다·우주 이야기는 무료로 끝까지 들려줄 수 있어요.').replace('closeFolk&&closeFolk();','')+'</div>'); };
+var gChips=function(){ document.querySelectorAll('.thm[data-thm]').forEach(function(b){ var lk=!gOpen()&&FREE_THM.indexOf(b.dataset.thm)<0, has=b.querySelector('.glk'); if(lk&&!has) b.insertAdjacentHTML('beforeend','<span class="glk"> 🔒</span>'); if(!lk&&has) has.remove(); }); };
+if(typeof makeStory==='function'){ var _msg=makeStory; makeStory=function(){ _msg.apply(this,arguments); gStory(); }; }
+if(typeof renderMe==='function'){ var _rmg=renderMe; renderMe=function(){ _rmg.apply(this,arguments); gChips(); try{ makeStory(); }catch(e){} }; }
+gChips(); try{ gStory(); }catch(e){}
+(function(){ var st=document.createElement('style'); st.textContent='.glock{margin:16px 0 4px;padding:18px 16px;border-radius:16px;background:linear-gradient(135deg,rgba(174,148,255,.18),rgba(255,214,120,.10));border:1px solid rgba(174,148,255,.35);text-align:center;word-break:keep-all;font-family:"Noto Sans KR",sans-serif}.glock-ic{font-size:26px}.glock b{display:block;font-size:17px;margin:4px 0 6px}.glock p{font-size:14px;line-height:1.6;opacity:.85;margin:0 0 12px}.glock .btn{max-width:100%;white-space:normal}.glk{font-size:.85em}'; document.head.appendChild(st); })();
