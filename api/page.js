@@ -34,6 +34,7 @@ const mins = b => Math.max(2, Math.round(b.replace(/<br\s*\/?>/g, '').replace(/\
 function page({ path, title, desc, h1, body, ld }) {
   const url = SITE + path;
   return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<script async src="https://www.googletagmanager.com/gtag/js?id=G-JLE88WCVH3"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag(\'js\',new Date());gtag(\'config\',\'G-JLE88WCVH3\');</script>' +
     '<title>' + esc(title) + '</title><meta name="description" content="' + esc(desc) + '"><link rel="canonical" href="' + url + '">' +
     '<meta property="og:type" content="article"><meta property="og:site_name" content="밤톨"><meta property="og:title" content="' + esc(title) + '">' +
     '<meta property="og:description" content="' + esc(desc) + '"><meta property="og:url" content="' + url + '"><meta property="og:image" content="' + SITE + '/api/img?i=og">' +
