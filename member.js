@@ -262,21 +262,42 @@ if(typeof openFolk==='function'){ var _ofb=openFolk; openFolk=function(i){ if(ty
 var bd=document.getElementById('ftBody'); _ofb(i); if(bd) bd.innerHTML='<p style="text-align:center;opacity:.7">동화를 불러오는 중이에요… 🌙</p>';
 loadBodies().then(function(){ var m=document.getElementById('ftModal'); if(m&&!m.hidden&&curFolkIdx===i) _ofb(i); }).catch(function(){ if(bd) bd.innerHTML='<p style="text-align:center">불러오지 못했어요. 잠시 후 다시 열어 주세요.</p>'; }); }; }
 (function(){ var f=document.getElementById('folk'); if(!f||!('IntersectionObserver' in window)) return; var io=new IntersectionObserver(function(es){ if(es.some(function(e){ return e.isIntersecting; })){ io.disconnect(); loadBodies().catch(function(){}); } },{rootMargin:'600px'}); io.observe(f); })();
-// 테마 동화팩: 결제가 열리기 전까지 전 편 무료로 읽기 (₩2,900 '받기'가 아이 등록창만 열리던 것 정리). 결제 붙이면 PACK_FREE=false
-var PACK_FREE=true;
-if(PACK_FREE&&typeof renderPackList==='function'){
+// 테마 동화팩: 1화는 누구나 무료 샘플, 나머지는 PLUS(지금은 카카오 로그인하면 무료 체험)에서 열림
+var packOpen=function(){ return !!(ME.login&&ME.plus); };
+if(typeof renderPackList==='function'){
 var _rpl=renderPackList; renderPackList=function(){ _rpl(); var v=document.getElementById('packView'); if(!v) return;
-v.querySelectorAll('.pkep-lock').forEach(function(b,i){ b.classList.remove('pkep-lock'); b.setAttribute('onclick','packEpisode('+(i+1)+')'); b.innerHTML=b.innerHTML.replace('🔒 ','').replace('잠김','읽기 →'); });
 var nm=packName(); v.querySelectorAll('.pkep span').forEach(function(x){ if(x.innerHTML.indexOf('@')>=0) x.innerHTML=x.innerHTML.split('@').join(nm); }); // 제목 속 @ 를 아이 이름으로
-var s=v.querySelector('.pkbuy span'); if(s) s.textContent='결제가 열리기 전까지 전체 '+PACKS[curPack].stories.length+'편 무료로 읽어요'; var bb=v.querySelector('.pkbuy .btn'); if(bb) bb.remove(); };
-packLocked=function(){ renderPackList(); };
+var n=PACKS[curPack].stories.length, s=v.querySelector('.pkbuy span'), bb=v.querySelector('.pkbuy .btn');
+if(packOpen()){ v.querySelectorAll('.pkep-lock').forEach(function(b,i){ b.classList.remove('pkep-lock'); b.setAttribute('onclick','packEpisode('+(i+1)+')'); b.innerHTML=b.innerHTML.replace('🔒 ','').replace('잠김','읽기 →'); });
+if(s) s.textContent='PLUS 회원은 전체 '+n+'편을 모두 읽을 수 있어요'; if(bb) bb.remove(); }
+else { if(s) s.textContent='1화 무료 샘플 · 전체 '+n+'편은 PLUS'; if(bb){ bb.textContent=ME.login?'PLUS 보기':'로그인하고 전 편 보기'; bb.setAttribute('onclick','event.stopPropagation();closePack();'+(ME.login?"go('#price')":'kakaoLogin()')); } } };
+packLocked=function(){ var p=PACKS[curPack]; document.getElementById('packView').innerHTML='<button class="pkback" onclick="renderPackList()">← 목록으로</button><div class="pklock"><div class="pklockem">🔒</div><h3>2화부터는 PLUS에서 읽을 수 있어요</h3><p>1화는 무료 샘플이에요. 지금은 카카오 로그인만 하면 PLUS를 무료로 체험하며 '+p.t+' 전체 '+p.stories.length+'편을 읽을 수 있어요.</p><button class="btn btn-brand" onclick="closePack();'+(ME.login?"go('#price')":'kakaoLogin()')+'">'+(ME.login?'PLUS 알아보기':'카카오 로그인하고 전 편 읽기')+'</button></div>'; };
 var _pe2=packEpisode; packEpisode=function(i){ _pe2(i); var m=document.querySelector('#packView .pkmore'); if(!m) return; var n=PACKS[curPack].stories.length;
-m.innerHTML=i+1<n?'<span>다음 이야기도 읽어볼까요?</span><button class="btn btn-brand" onclick="packEpisode('+(i+1)+')">'+(i+2)+'화 읽기 →</button>':'<span>마지막 이야기예요 🌙</span><button class="btn btn-ghost" onclick="renderPackList()">목록으로</button>'; };
-var fixGrid=function(){ document.querySelectorAll('.pprice').forEach(function(e){ if(e.dataset.fx) return; e.dataset.fx=1; e.innerHTML='무료 <s style="opacity:.55;font-weight:400">'+e.textContent+'</s>'; });
-document.querySelectorAll('.pmeta+.btn,.pmeta~.btn').forEach(function(b){ b.removeAttribute('onclick'); b.textContent='읽어보기'; }); };
+m.innerHTML=i+1>=n?'<span>마지막 이야기예요 🌙</span><button class="btn btn-ghost" onclick="renderPackList()">목록으로</button>':(packOpen()?'<span>다음 이야기도 읽어볼까요?</span><button class="btn btn-brand" onclick="packEpisode('+(i+1)+')">'+(i+2)+'화 읽기 →</button>':'<span>다음 이야기가 궁금하다면?</span><button class="btn btn-brand" onclick="packLocked()">2화부터 이어 읽기</button>'); };
+var fixGrid=function(){ document.querySelectorAll('.pprice').forEach(function(e){ if(e.dataset.fx) return; e.dataset.fx=1; e.textContent='1화 무료'; });
+document.querySelectorAll('.pmeta+.btn,.pmeta~.btn').forEach(function(b){ b.removeAttribute('onclick'); b.textContent='1화 무료로 읽기'; }); };
 fixGrid(); if(typeof renderPackGrid==='function'){ var _rpg=renderPackGrid; renderPackGrid=function(){ _rpg(); fixGrid(); }; }
-document.querySelectorAll('.year-note').forEach(function(e){ if(/2,900/.test(e.textContent)) e.innerHTML='테마 동화팩도 결제가 열리기 전까지 <b>모든 편 무료</b>로 읽을 수 있어요.'; });
+document.querySelectorAll('.year-note').forEach(function(e){ if(/2,900/.test(e.textContent)) e.innerHTML='테마 동화팩은 <b>1화 무료 샘플</b>로 먼저 읽어보고, 전 편은 PLUS에서 볼 수 있어요.'; });
 }
+// PLUS 첫 달 2,900원 (이후 월 6,900원) 표시. 결제(나이스페이) 붙일 때 pay.js 금액도 같은 기준
+(function(){ var pp=document.getElementById('plusPrice'); if(!pp) return;
+var m=function(){ pp.innerHTML='<span style="display:block;font-size:13px;font-weight:700;color:var(--gold,#FFC862);letter-spacing:0">첫 달 특가</span>₩2,900<small> / 첫 달</small><span style="display:block;font-size:13px;font-weight:500;color:var(--ink-soft,#DAD3F2);margin-top:4px">둘째 달부터 월 ₩6,900 · 언제든 해지</span>'; };
+m(); if(typeof setBill==='function'){ var _sb=setBill; setBill=function(x){ _sb(x); if(x!=='y') m(); }; } })();
+// 결제 전에 무료로 먼저 해보기: 첫 화면 바로 아래에 무료 샘플 모음 (이름 동화·샘플 동화 3편·동화팩 1화·자연 음성)
+(function(){ var how=document.getElementById('how'); if(!how||document.getElementById('samples')) return;
+var lib=function(t){ if(typeof LIB==='undefined') return -1; for(var i=0;i<LIB.length;i++) if(LIB[i].t===t) return i; return -1; };
+window.smpFolk=function(t){ var i=lib(t); if(i>=0) openFolk(i); }; // 새 동화가 앞에 끼어들어도 제목으로 찾기
+var folk=['흥부와 놀부','토끼와 거북이','해님 달님'].map(function(t){ var i=lib(t); return i<0?'':'<button type="button" class="smp-chip" onclick="smpFolk(\''+t+'\')">'+LIB[i].e+' '+t+'</button>'; }).join('');
+var pk=['양치','이빨요정'].filter(function(k){ return typeof PACKS!=='undefined'&&PACKS[k]; }).map(function(k){ return '<button type="button" class="smp-chip" onclick="openPack(\''+k+'\');packEpisode(0)">'+PACKS[k].e+' '+PACKS[k].t+' 1화</button>'; }).join('');
+how.insertAdjacentHTML('beforebegin','<section class="sec" id="samples"><div class="wrap"><div class="sec-head"><h2>결제 전에, 무료로 먼저 해보세요</h2><p>가입·카드 없이 바로 써볼 수 있어요. 마음에 들면 PLUS <b>첫 달 2,900원</b>.</p></div><div class="smp-grid">'
++'<div class="smp-card"><div class="smp-ic">✨</div><b>우리 아이 이름 동화 만들기</b><p>이름만 넣으면 아이가 주인공인 동화가 바로 나와요.</p><div class="smp-form"><input id="smpName" maxlength="8" placeholder="아이 이름 (예: 지우)" aria-label="아이 이름"><button type="button" class="btn btn-brand" onclick="smpMake()">만들기</button></div></div>'
++'<div class="smp-card"><div class="smp-ic">📚</div><b>무료 샘플 동화 읽기</b><p>자연 음성으로 읽어주기까지 그대로 들어보세요.</p><div class="smp-chips">'+folk+'</div></div>'
++'<div class="smp-card"><div class="smp-ic">🎁</div><b>테마 동화팩 1화 무료</b><p>양치·첫 이 빠진 날 같은 순간에 꼭 맞는 이야기예요.</p><div class="smp-chips">'+pk+'</div></div>'
++'</div></div></section>');
+var st=document.createElement('style'); st.textContent='#samples{padding-top:36px}.smp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.smp-card{min-width:0;background:var(--surface,#241D45);border:1px solid var(--line,#352C5E);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:6px}.smp-card b{font-size:17px}.smp-card p{color:var(--ink-soft,#DAD3F2);font-size:14.5px;line-height:1.6;margin:0 0 6px}.smp-ic{font-size:28px}.smp-form{display:flex;gap:8px;margin-top:auto}.smp-form input{flex:1;min-width:0;border:1.5px solid var(--line-strong,#483C7C);background:var(--sunk,#1E1740);color:var(--ink,#F8F5FF);border-radius:12px;padding:11px 12px;font:inherit;font-size:16px}.smp-form .btn{white-space:nowrap}.smp-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto}.smp-chip{border:1.5px solid var(--line-strong,#483C7C);background:var(--surface-2,#2F2659);color:var(--ink,#F8F5FF);border-radius:999px;padding:9px 14px;font:inherit;font-size:14.5px;font-weight:600;cursor:pointer;min-height:40px}.smp-chip:hover{border-color:var(--brand,#AE94FF)}@media(max-width:900px){.smp-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.smp-card:first-child{grid-column:1/-1}}@media(max-width:600px){.smp-grid{grid-template-columns:minmax(0,1fr)}#samples{padding-top:24px}}';
+document.head.appendChild(st);
+})();
+window.smpMake=function(){ var n=(document.getElementById('smpName').value||'').trim().slice(0,8); if(!n){ toast('아이 이름을 넣어 주세요'); return; } var k=document.getElementById('kidName'); if(k) k.value=n; try{ makeStory(); }catch(e){} go('#try'); toast(n+' 이야기를 만들었어요 🌙'); };
 // 홈 화면에 추가 안내: 아이폰·아이패드는 자동 안내가 없어서 한 번만 알려줌, 안드로이드는 설치 창 띄우기. ✕ 누르면 다시 안 뜸
 (function(){
 var get=function(){ try{ return localStorage.getItem('bamtol_a2hs'); }catch(e){ return '1'; } }, set=function(){ try{ localStorage.setItem('bamtol_a2hs','1'); }catch(e){} };
