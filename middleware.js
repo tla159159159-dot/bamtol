@@ -54,6 +54,8 @@ function lighten(h) {
 const FAM = [
   ['🖍️', '콕콕 색칠공부', '오늘 밤 동화 속 친구들, 내일 낮엔 색칠해요. 가입 없이 무료 도안 100여 종', 'https://kokcolor.kr/'],
   ['✏️', '도장쾅 학습지', '하루 한 장 뽑아서, 다 풀면 도장 쾅! 한글·수학·영어 프린트 학습지', 'https://www.dojangkwang.co.kr/'],
+  ['🔤', '말랑영어', '동화 좋아하는 아이, 영어도 말랑하게. 알파벳·파닉스 학습지와 소리 나는 영어 읽기', 'https://malangenglish.co.kr/'],
+  ['🌱', '우리애 뭐잘해?', '우리 아이는 뭘 잘할까? 기질·학습성향·사회성까지 보는 무료 재능검사', 'https://mwojalhae.kr/'],
   ['💬', '맘먼트', '아이 재우고 난 엄마 시간. 수면교육·육아 고민을 나누는 엄마 커뮤니티', 'https://mommoment.kr/'],
 ];
 const famUrl = (u, m) => u + '?utm_source=bamtol&utm_medium=' + m;
