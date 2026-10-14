@@ -59,12 +59,13 @@ function page({ path, title, desc, h1, body, ld }) {
     '.ctaf{display:flex;gap:8px;max-width:420px;margin:14px auto 0}.ctaf input{flex:1;min-width:0;border:1.5px solid #5A4AA0;background:#181328;color:#fff;border-radius:12px;padding:11px 12px;font:16px "Noto Sans KR"}.ctaf .go{border:0;cursor:pointer;white-space:nowrap}' +
     '.stick{position:fixed;left:12px;right:12px;bottom:12px;z-index:9;display:block;text-align:center;background:#AE94FF;color:#140E2C;border-radius:14px;padding:13px 10px;font-weight:700;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.35);max-width:520px;margin:0 auto}.stick b{margin-left:4px}' +
     '.paid{display:none}.glock{margin:18px 0 0;padding:18px 14px;border-radius:16px;background:linear-gradient(135deg,rgba(174,148,255,.18),rgba(255,214,120,.1));border:1px solid #5A4AA0;text-align:center;font:15px/1.7 "Noto Sans KR",sans-serif;word-break:keep-all}.glock b{display:block;font-size:17px}.glock p{color:#DAD3F2;font-size:14px;margin:6px 0 12px}.glock .go{display:inline-block}' +
+    '.sp{display:flex;align-items:center;gap:14px;margin:22px 0;padding:16px 18px;border-radius:18px;background:#221A40;border:1px solid #3A2F6B;text-decoration:none;color:#F2EEFF;word-break:keep-all}.sp i{flex:none;width:48px;height:48px;border-radius:14px;background:#3B2F18;display:grid;place-items:center;font-size:24px;font-style:normal}.sp div{flex:1;min-width:0}.sp small{display:block;font-size:11px;color:#8D84B5}.sp b{display:block;font-size:16px;line-height:1.4}.sp b span{color:#FFD678}.sp em{display:block;font-style:normal;font-size:13px;color:#ABA2CE;margin-top:2px}.spb{flex:none;background:#AE94FF;color:#140E2C;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:700;white-space:nowrap}@media(max-width:560px){.sp{flex-wrap:wrap}.spb{width:100%;text-align:center}}' +
     '.guide{background:#221A40;border:1px solid #3A2F6B;border-radius:18px;padding:4px 20px 14px;margin:18px 0;word-break:keep-all}.guide h2{font-size:18px;margin:18px 0 6px}.guide p{margin:0;color:#DAD3F2}.guide ol{margin:0;padding-left:22px;color:#DAD3F2}.guide li{margin:4px 0}' +
     '.fav{background:transparent;color:#F2EEFF;border:1.5px solid #5A4AA0;border-radius:12px;padding:11px 14px;font:700 15px "Noto Sans KR";cursor:pointer;margin:12px 0 0 6px}</style></head><body><div class="w">' +
     '<header><a class="logo" href="/">🌙 밤톨</a><a class="go" href="/">우리 아이 이름 동화 만들기</a></header>' +
     body +
     '<h2>동화 모음 더 보기</h2><div class="hubs">' + Object.keys(HUBS).map(k => '<a href="/' + k + '/">' + HUBS[k].h + '</a>').join('') + '</div>' +
-    '<footer>© 밤톨 · 매일 밤 우리 아이 맞춤 동화 · <a href="/">bamtol.co.kr</a><br>🌱 가족 사이트 · ' + [['콕콕 색칠공부', 'https://kokcolor.kr/'], ['도장쾅 학습지', 'https://www.dojangkwang.co.kr/'], ['맘먼트', 'https://mommoment.kr/']].map(([n, u]) => '<a href="' + u + UTM('footer') + '" target="_blank" rel="noopener" style="margin-right:10px">' + n + '</a>').join('') + '</footer></div></body></html>';
+    '<footer>© 밤톨 · 매일 밤 우리 아이 맞춤 동화 · <a href="/">bamtol.co.kr</a><br>🌱 가족 사이트 · ' + [['콕콕 색칠공부', 'https://kokcolor.kr/'], ['도장쾅 학습지', 'https://www.dojangkwang.co.kr/'], ['말랑영어', 'https://malangenglish.co.kr/'], ['우리애 뭐잘해?', 'https://mwojalhae.kr/'], ['맘먼트', 'https://mommoment.kr/']].map(([n, u]) => '<a href="' + u + UTM('footer') + '" target="_blank" rel="noopener" style="margin-right:10px">' + n + '</a>').join('') + '</footer></div></body></html>';
 }
 
 // 검색으로 들어온 사람을 회원으로: 아이 이름 넣으면 메인에서 그 이름 동화가 바로 열림 (member.js 의 ?name=)
@@ -82,8 +83,15 @@ function family(x) {
   return '<div class="fam"><b>🌞 내일 낮엔 이렇게 이어가요</b>' +
     row('https://kokcolor.kr/' + encodeURI('색칠공부/' + k[0]) + UTM('story'), (kt ? '🖍️ 동화 속 ' + k[2] + ', 색칠해 볼까요? →' : '🖍️ ' + k[2] + ' 색칠공부 해볼까요? →'), '콕콕 색칠공부 · 가입 없이 무료 도안') +
     row('https://www.dojangkwang.co.kr/' + encodeURI('한글학습지/') + UTM('story'), '✏️ 이야기 좋아하는 아이라면 한글도 즐겁게 →', '도장쾅 학습지 · 하루 한 장, 다 풀면 도장 쾅!') +
+    row('https://malangenglish.co.kr/' + UTM('story'), '🔤 동화 좋아하는 아이, 영어 소리도 말랑하게 →', '말랑영어 · 알파벳 따라쓰기·파닉스 학습지, 무료 샘플') +
     row('https://mommoment.kr/' + UTM('story'), '💬 아이 재우고 엄마 시간 →', '맘먼트 · 수면교육·육아 고민 나누는 엄마 커뮤니티') + '</div>';
 }
+// 가족 사이트 광고 카드 (본문 사이에 자연스럽게). 우리애 뭐잘해? = 아이 재능검사, 말랑영어 = 엄마표 영어 학습지
+const SP = {
+  talent: ['🌱', '광고 · 읽고 나서 아이 대답, 어땠나요?', '우리 아이는 뭘 잘할까? <span>무료 재능검사</span>', '만 5~12세 기질·학습성향·사회성까지 17종 검사 — 우리애 뭐잘해?', 'https://mwojalhae.kr/', '무료로 검사하기'],
+  eng: ['🔤', '광고 · 이야기 좋아하는 아이라면', '동화처럼 말랑하게 시작하는 <span>엄마표 영어</span>', '알파벳 따라쓰기·파닉스·소리 나는 영어 읽기, 3세~초등 — 말랑영어', 'https://malangenglish.co.kr/', '무료 샘플 받기'],
+};
+const sp = (k, m) => { const [e, t, h, d, u, b] = SP[k]; return '<a class="sp" href="' + u + UTM(m) + '" target="_blank" rel="noopener sponsored"><i aria-hidden="true">' + e + '</i><div><small>' + t + '</small><b>' + h + '</b><em>' + d + '</em></div><span class="spb">' + b + '</span></a>'; };
 const card = x => '<li><a href="/' + x.s + '/">' + x.e + ' ' + esc(x.t) + (x.free ? ' <span style="font-size:12px;color:#FFD678">무료</span>' : '') + '<small>' + esc(x.o) + '</small></a></li>';
 
 function storyPage(x, all) {
@@ -100,7 +108,7 @@ function storyPage(x, all) {
     '<h1>' + x.e + ' ' + esc(x.t) + '</h1><p class="one">' + esc(x.o) + '</p><div class="meta">' + cat + ' · ' + x.L + ' · 읽는 시간 약 ' + mins(x.b) + '분</div>' +
     '<button class="play" id="play">🔊 자연 음성으로 읽어주기</button><button class="fav" id="fav">♡ 찜하기</button><button class="fav" id="shr">🔗 공유하기</button>' +
     '<article class="story">' + head + (rest ? '<div class="paid" id="paid"><br><br>' + rest + '</div><div class="glock" id="glock"><div style="font-size:26px">🔒</div><b>뒷이야기는 PLUS에서 이어져요</b><p>무료 동화 ' + FREE.length + '편은 끝까지 읽을 수 있어요.<br>지금은 카카오 로그인만 하면 PLUS를 무료로 체험할 수 있어요.</p><a class="go" id="glockGo" href="/api/me?login">카카오 로그인하고 끝까지 읽기</a></div>' : '') + '</article>' +
-    (x.g ? '<section class="guide"><h2>이 동화의 교훈</h2><p>' + esc(x.g.l) + '</p><h2>읽고 나서 아이에게 물어봐요</h2><ol>' + x.g.q.map(q => '<li>' + esc(q) + '</li>').join('') + '</ol></section>' : '') +
+    (x.g ? '<section class="guide"><h2>이 동화의 교훈</h2><p>' + esc(x.g.l) + '</p><h2>읽고 나서 아이에게 물어봐요</h2><ol>' + x.g.q.map(q => '<li>' + esc(q) + '</li>').join('') + '</ol></section>' : '') + sp(x.c === '전래' ? 'talent' : 'eng', 'story_ad') +
     CTA('이 동화, 우리 아이 이름으로 들려줄까요?') + family(x) +
     '<h2>' + cat + ' 더 읽기</h2><ul class="list">' + rel.map(card).join('') + '</ul>' +
     '<script>var T=' + JSON.stringify(plain(head)).replace(/</g, '\\u003c') + (rest ? ',TF=' + JSON.stringify(text).replace(/</g, '\\u003c') : '') + ';' +
@@ -125,7 +133,7 @@ function hubPage(k, all) {
   const H = HUBS[k], items = all.filter(H.f), desc = H.d.replace('{n}', items.length);
   const title = H.h + ' ' + items.length + '편 – 무료로 미리 읽고 듣는 아이 동화 | 밤톨';
   const body = '<nav class="bc"><a href="/">홈</a> › ' + H.h + '</nav><h1>' + H.h + '</h1><p class="one">' + esc(desc) + '</p>' +
-    '<ul class="list" style="margin-top:18px">' + items.map(card).join('') + '</ul>' +
+    '<ul class="list" style="margin-top:18px">' + items.map(card).join('') + '</ul>' + sp(/세계|이솝/.test(k) ? 'eng' : 'talent', 'hub_ad') +
     CTA('매일 밤, 우리 아이가 주인공인 새 동화');
   const ld = { '@context': 'https://schema.org', '@type': 'CollectionPage', name: H.h, description: desc, url: SITE + '/' + k + '/', inLanguage: 'ko',
     mainEntity: { '@type': 'ItemList', itemListElement: items.map((x, i) => ({ '@type': 'ListItem', position: i + 1, url: SITE + '/' + x.s + '/', name: x.t })) } };
