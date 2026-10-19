@@ -36,8 +36,8 @@ const mins = b => Math.max(2, Math.round(b.replace(/<br\s*\/?>/g, '').replace(/\
 
 function page({ path, title, desc, h1, body, ld }) {
   const url = SITE + path;
-  return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
-    '<script async src="https://www.googletagmanager.com/gtag/js?id=G-JLE88WCVH3"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag(\'js\',new Date());gtag(\'config\',\'G-JLE88WCVH3\');</script>' +
+  return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
+    '<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag(\'js\',new Date());gtag(\'config\',\'G-JLE88WCVH3\');(function(){var d=0;function L(){if(d)return;d=1;var s=document.createElement("script");s.async=1;s.src="https://www.googletagmanager.com/gtag/js?id=G-JLE88WCVH3";document.head.appendChild(s);}["scroll","pointerdown","keydown"].forEach(function(e){addEventListener(e,L,{once:true,passive:true})});setTimeout(L,2500);})();</script>' +
     '<title>' + esc(title) + '</title><meta name="description" content="' + esc(desc) + '"><link rel="canonical" href="' + url + '">' +
     '<meta property="og:type" content="article"><meta property="og:site_name" content="밤톨"><meta property="og:title" content="' + esc(title) + '">' +
     '<meta property="og:description" content="' + esc(desc) + '"><meta property="og:url" content="' + url + '"><meta property="og:image" content="' + SITE + '/api/img?i=og">' +
@@ -45,7 +45,7 @@ function page({ path, title, desc, h1, body, ld }) {
     '<link rel="icon" type="image/png" href="/api/img?i=icon"><link rel="apple-touch-icon" href="/api/img?i=apple"><meta name="theme-color" content="#181328">' +
     '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap">' +
     '<script type="application/ld+json">' + JSON.stringify(ld).replace(/</g, '\\u003c') + '</script>' +
-    '<style>body{margin:0;background:#181328;color:#F2EEFF;font:16px/1.75 "Noto Sans KR",sans-serif}a{color:#C9B8FF}.w{max-width:760px;margin:0 auto;padding:20px 16px 60px}' +
+    '<style>body{margin:0;background:#181328;color:#F2EEFF;font:16px/1.75 "Noto Sans KR",sans-serif;word-break:keep-all;overflow-wrap:break-word;-webkit-text-size-adjust:100%}a,button,input,summary{touch-action:manipulation}a{color:#C9B8FF}.w{max-width:760px;margin:0 auto;padding:20px 16px 60px}' +
     'header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:22px}header a.logo{font:700 22px "Gowun Batang",serif;color:#FFD678;text-decoration:none}' +
     '.go{background:#AE94FF;color:#140E2C;border-radius:12px;padding:9px 14px;font-weight:700;text-decoration:none;font-size:14px}nav.bc{font-size:13px;color:#ABA2CE;margin-bottom:10px}nav.bc a{color:#ABA2CE}' +
     'h1{font:700 30px/1.35 "Gowun Batang",serif;margin:6px 0 8px}.one{color:#DAD3F2;margin:0 0 6px}.meta{color:#ABA2CE;font-size:14px}' +
@@ -55,9 +55,9 @@ function page({ path, title, desc, h1, body, ld }) {
     '.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;padding:0;list-style:none}.list a{display:block;background:#221A40;border:1px solid #3A2F6B;border-radius:14px;padding:12px 14px;text-decoration:none;color:#F2EEFF;height:100%;box-sizing:border-box}' +
     '.list small{display:block;color:#ABA2CE;font-size:13px;line-height:1.5;margin-top:3px}h2{font:700 20px "Gowun Batang",serif;margin:30px 0 12px}.hubs{display:flex;flex-wrap:wrap;gap:8px}.hubs a{background:#2B2252;border-radius:999px;padding:7px 13px;text-decoration:none;font-size:14px}' +
     '.fam{background:#221A40;border:1px solid #3A2F6B;border-radius:18px;padding:16px 18px;margin:26px 0}.fam>b{display:block;font:700 18px "Gowun Batang",serif;margin-bottom:4px}.fam a{display:block;text-decoration:none;color:#F2EEFF;font-weight:700;padding:11px 0;border-top:1px solid #2E2552}.fam b+a{border-top:0}.fam small{display:block;color:#ABA2CE;font-size:13px;font-weight:400}' +
-    'footer{color:#8D84B5;font-size:13px;margin-top:40px;line-height:2}body{padding-bottom:70px}.cta small{display:block;color:#ABA2CE;font-size:12.5px;margin-top:10px}' +
+    'footer{color:#8D84B5;font-size:13px;margin-top:40px;line-height:2}body{padding-bottom:calc(70px + env(safe-area-inset-bottom))}.cta small{display:block;color:#ABA2CE;font-size:12.5px;margin-top:10px}' +
     '.ctaf{display:flex;gap:8px;max-width:420px;margin:14px auto 0}.ctaf input{flex:1;min-width:0;border:1.5px solid #5A4AA0;background:#181328;color:#fff;border-radius:12px;padding:11px 12px;font:16px "Noto Sans KR"}.ctaf .go{border:0;cursor:pointer;white-space:nowrap}' +
-    '.stick{position:fixed;left:12px;right:12px;bottom:12px;z-index:9;display:block;text-align:center;background:#AE94FF;color:#140E2C;border-radius:14px;padding:13px 10px;font-weight:700;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.35);max-width:520px;margin:0 auto}.stick b{margin-left:4px}' +
+    '.stick{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:9;display:block;text-align:center;background:#AE94FF;color:#140E2C;border-radius:14px;padding:13px 10px;font-weight:700;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.35);max-width:520px;margin:0 auto}.stick b{margin-left:4px}' +
     '.paid{display:none}.glock{margin:18px 0 0;padding:18px 14px;border-radius:16px;background:linear-gradient(135deg,rgba(174,148,255,.18),rgba(255,214,120,.1));border:1px solid #5A4AA0;text-align:center;font:15px/1.7 "Noto Sans KR",sans-serif;word-break:keep-all}.glock b{display:block;font-size:17px}.glock p{color:#DAD3F2;font-size:14px;margin:6px 0 12px}.glock .go{display:inline-block}' +
     '.sp{display:flex;align-items:center;gap:14px;margin:22px 0;padding:16px 18px;border-radius:18px;background:#221A40;border:1px solid #3A2F6B;text-decoration:none;color:#F2EEFF;word-break:keep-all}.sp i{flex:none;width:48px;height:48px;border-radius:14px;background:#3B2F18;display:grid;place-items:center;font-size:24px;font-style:normal}.sp div{flex:1;min-width:0}.sp small{display:block;font-size:11px;color:#8D84B5}.sp b{display:block;font-size:16px;line-height:1.4}.sp b span{color:#FFD678}.sp em{display:block;font-style:normal;font-size:13px;color:#ABA2CE;margin-top:2px}.spb{flex:none;background:#AE94FF;color:#140E2C;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:700;white-space:nowrap}@media(max-width:560px){.sp{flex-wrap:wrap}.spb{width:100%;text-align:center}}' +
     '.guide{background:#221A40;border:1px solid #3A2F6B;border-radius:18px;padding:4px 20px 14px;margin:18px 0;word-break:keep-all}.guide h2{font-size:18px;margin:18px 0 6px}.guide p{margin:0;color:#DAD3F2}.guide ol{margin:0;padding-left:22px;color:#DAD3F2}.guide li{margin:4px 0}' +
@@ -96,8 +96,9 @@ const card = x => '<li><a href="/' + x.s + '/">' + x.e + ' ' + esc(x.t) + (x.fre
 
 function storyPage(x, all) {
   const cat = CAT[x.c] || '동화';
-  const title = x.t + ' 동화 | 잠자리 ' + cat + ' 읽어주기 – 밤톨';
-  const desc = x.t + ' – ' + x.o + (x.free ? '. 밤톨에서 무료로 읽고, 사람 같은 자연 음성으로 들려주세요.' : '. 앞부분은 무료로 읽고, 교훈과 아이에게 물어볼 질문까지 함께 보세요.');
+  const title = x.t + (x.s !== x.t.replace(/\s+/g, '') ? ' (' + x.L + ')' : '') + ' 동화 | 잠자리 ' + cat + ' 읽어주기 – 밤톨'; // 같은 제목 단편·장편 구분
+  const d0 = x.t + ' – ' + x.o + '.', d1 = d0 + (x.free ? ' 무료로 읽고 자연 음성으로 들려주세요.' : ' 앞부분 무료, 교훈·질문까지 함께 봐요.');
+  const desc = d1.length <= 80 ? d1 : d0; // 네이버 설명 80자 이하
   const ps = x.b.split(/(?:<br\s*\/?>\s*){2,}/), cut = x.free ? ps.length : Math.max(2, Math.ceil(ps.length * .3));
   const head = ps.slice(0, cut).join('<br><br>'), rest = ps.slice(cut).join('<br><br>');
   const plain = h => h.replace(/<br\s*\/?>/g, ' ').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
