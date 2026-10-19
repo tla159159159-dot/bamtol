@@ -55,3 +55,12 @@
   /* 아이폰에서 입력할 때 화면이 확대되지 않게 */
   input,select,textarea{font-size:16px!important}
 }
+
+/* 홈페이지 제작 가이드 3-6 반영: 터치·입력칸·자간 */
+a,button,input,select,textarea,label,summary{touch-action:manipulation;-webkit-tap-highlight-color:rgba(174,148,255,.18)}
+input:not([type=checkbox]):not([type=radio]),select,textarea{font-size:16px!important} /* 16px 미만이면 아이폰이 확대 */
+.thm,.ftchip,.billtoggle button,.kakaobtn{min-height:40px}
+.thm,.bgmBtn{display:inline-flex;align-items:center;justify-content:center}
+@media (pointer:coarse){.thm,.ftchip,.billtoggle button,.kakaobtn,.btn{min-height:44px}}
+.day,.tier-badge,.an{letter-spacing:.04em!important}
+.price{line-height:1.15!important}
